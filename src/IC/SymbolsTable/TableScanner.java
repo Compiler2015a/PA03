@@ -1,16 +1,31 @@
 package IC.SymbolsTable;
 
 import IC.AST.*;
+import IC.SemanticAnalysis.SemanticError;
 
 public class TableScanner implements Visitor {
 	
 	private int blocksCounter;
+	private SymbolTable currentSymbolTable;
+	
+	private InitializedMoreThanOnceError moreThanOnceError;
+	private ExtnendingNonExistingClassError exdnsNonExistingClassEroor;
 	
 	public TableScanner() {
+		
+	}
+	
+	public void getSemanticError() throws SemanticError {
+		if (exdnsNonExistingClassEroor != null)
+			throw new SemanticError(exdnsNonExistingClassEroor.getLine(), exdnsNonExistingClassEroor.getMassage());
+		if (moreThanOnceError != null)
+			throw new SemanticError(moreThanOnceError.getLine(), moreThanOnceError.getMassage());
 	}
 	
 	public void Init() {
 		this.blocksCounter = 0;
+		this.moreThanOnceError = null;
+		this.exdnsNonExistingClassEroor = null;
 	}
 	
 	SymbolTable getSymbolTableTree() {
@@ -22,40 +37,80 @@ public class TableScanner implements Visitor {
 	@Override
 	public Object visit(Program program) {
 		SymbolTable root = new SymbolTable("globals");
-		SymbolTable currentClassSymbolTable;
+		this.currentSymbolTable = root;
 		for (ICClass icClass : program.getClasses()) {
-			currentClassSymbolTable = (SymbolTable)icClass.accept(this);
-			root.entries.put(icClass.getName(),
-					new SymbolEntry(icClass.getName(), null, SymbolEntry.Kind.Class));
-			currentClassSymbolTable.parentSymbolTable = root;
-			root.children.add(currentClassSymbolTable);
+			if (!(Boolean)icClass.accept(this))
+				return false;
 		}
-		return root;
+		return true;
 	}
 
 	@Override
 	public Object visit(ICClass icClass) {
-		SymbolTable clsTable = new SymbolTable(icClass.getName());
-		SymbolTable currentClassSymbolTable;
+		SymbolTable virtualClsTable = new SymbolTable(icClass.getName() + "_virtual");
+		SymbolTable staticClsTable = new SymbolTable(icClass.getName() + "_static");
+		
+		virtualClsTable.parentSymbolTable = this.currentSymbolTable;
+		virtualClsTable.parentSymbolTable.children.put(icClass.getName() + "_virtual", virtualClsTable);
+		virtualClsTable.parentSymbolTable.entries.put(icClass.getName(),
+				new SymbolEntry(icClass.getName(), null, IDSymbolsKinds.Class));
+		staticClsTable.parentSymbolTable = this.currentSymbolTable;
+		staticClsTable.parentSymbolTable.children.put(icClass.getName() + "_static", staticClsTable);
+	
 		for (Method method : icClass.getMethods()) {
-			currentClassSymbolTable = (SymbolTable)method.accept(this);
-			clsTable.entries.put(method.getName(),
-					new SymbolEntry(method.getName(), method.getType(), SymbolEntry.Kind.Method));
-			currentClassSymbolTable.parentSymbolTable = clsTable;
-			clsTable.children.add(currentClassSymbolTable);
+			if (method instanceof VirtualMethod) 
+				this.currentSymbolTable = virtualClsTable;
+			if (method instanceof StaticMethod)
+				this.currentSymbolTable = staticClsTable;
+			if (!(Boolean)method.accept(this))
+				return false;
 		}
 		
-		for (Field field : icClass.getFields()) {
-			clsTable.entries.put(field.getName(),
-					new SymbolEntry(field.getName(), field.getType(), SymbolEntry.Kind.Varable));
+		this.currentSymbolTable = virtualClsTable;
+		for (Field field : icClass.getFields())  {
+			if (!(Boolean)field.accept(this))
+				return false;
 		}
 		
-		return clsTable;
+		this.currentSymbolTable = virtualClsTable.parentSymbolTable;
+		
+		if (icClass.hasSuperClass()) {
+			if ((!this.currentSymbolTable.children.containsKey(icClass.getSuperClassName() + "_virtual"))  ||
+					(!this.currentSymbolTable.children.containsKey(icClass.getSuperClassName() + "_static"))) {
+				this.exdnsNonExistingClassEroor = new ExtnendingNonExistingClassError(
+						icClass.getLine(), icClass.getSuperClassName());
+				return false;
+			}
+			SymbolTable parentVirtualSymbolTable = this.currentSymbolTable.children.get(
+					icClass.getSuperClassName() + "_virtual");
+			SymbolTable parentStaticSymbolTable = this.currentSymbolTable.children.get(
+					icClass.getSuperClassName() + "_static");
+			for (String key : parentVirtualSymbolTable.entries.keySet()) {
+				if (!virtualClsTable.entries.containsKey(key))
+					virtualClsTable.entries.put(key, parentVirtualSymbolTable.entries.get(key));
+			}
+			for (String key : parentStaticSymbolTable.entries.keySet()) {
+				if (!staticClsTable.entries.containsKey(key))
+					staticClsTable.entries.put(key, parentVirtualSymbolTable.entries.get(key));
+			}
+		}
+		
+		return true;
 	}
 
 	@Override
 	public Object visit(Field field) {
-		return null;
+		if (this.currentSymbolTable.entries.containsKey(field.getName())) {
+			this.moreThanOnceError = new InitializedMoreThanOnceError(
+					field.getLine(), field.getName(), IDSymbolsKinds.Variable);
+			return false;
+		}
+		this.currentSymbolTable.entries.put(field.getName(),
+				new SymbolEntry(field.getName(), field.getType(), IDSymbolsKinds.Variable));
+		
+		field.setSymbolsTable(this.currentSymbolTable);
+		
+		return true;
 	}
 
 	@Override
@@ -75,7 +130,17 @@ public class TableScanner implements Visitor {
 
 	@Override
 	public Object visit(Formal formal) {
-		return null;
+		if (this.currentSymbolTable.entries.containsKey(formal.getName())) {
+			this.moreThanOnceError = new InitializedMoreThanOnceError(
+					formal.getLine(), formal.getName(), IDSymbolsKinds.Variable);
+			return false;
+		}
+		
+		this.currentSymbolTable.entries.put(formal.getName(),
+				new SymbolEntry(formal.getName(), formal.getType(), IDSymbolsKinds.Variable));
+		formal.setSymbolsTable(this.currentSymbolTable);
+		
+		return true;
 	}
 
 	@Override
@@ -90,76 +155,133 @@ public class TableScanner implements Visitor {
 
 	@Override
 	public Object visit(Assignment assignment) {
-		return null;
+		assignment.getVariable().accept(this);
+		assignment.getAssignment().accept(this);
+		assignment.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(CallStatement callStatement) {
-		return null;
+		callStatement.getCall().accept(this);
+		callStatement.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(Return returnStatement) {
-		return null;
+		if (returnStatement.hasValue())
+			returnStatement.getValue().accept(this);
+
+		returnStatement.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(If ifStatement) {
-		return null;
+		ifStatement.getCondition().accept(this);
+		if (!(Boolean)ifStatement.getOperation().accept(this))
+			return false;
+		
+		if (ifStatement.hasElse()) {
+			if (!(Boolean)ifStatement.getElseOperation().accept(this))
+				return false;
+		}
+		
+		ifStatement.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(While whileStatement) {
-		return null;
+		whileStatement.getCondition().accept(this);
+		if (!(Boolean)whileStatement.getOperation().accept(this))
+			return false;
+		
+		whileStatement.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(Break breakStatement) {
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(Continue continueStatement) {
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(StatementsBlock statementsBlock) {
+		
 		this.blocksCounter++;
 		String blockId = "block" + blocksCounter;
 		SymbolTable stmntBlockTable = new SymbolTable(blockId);
+		stmntBlockTable.parentSymbolTable = this.currentSymbolTable;
+		stmntBlockTable.parentSymbolTable.children.put(blockId, stmntBlockTable);
+		this.currentSymbolTable = stmntBlockTable;
+		
 		for (Statement stmnt : statementsBlock.getStatements()) {
-			if (stmnt instanceof LocalVariable) {
-				LocalVariable localVar = (LocalVariable)stmnt;
-				stmntBlockTable.entries.put(localVar.getName(),
-						new SymbolEntry(localVar.getName(), localVar.getType(), SymbolEntry.Kind.Varable));
-			}
+			if (!(Boolean)stmnt.accept(this))
+				return false;
 		}
-		return stmntBlockTable;
+		
+		this.currentSymbolTable = stmntBlockTable.parentSymbolTable;
+		statementsBlock.setSymbolsTable(this.currentSymbolTable);
+		return true;
 	}
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
-		return null;
+		if (this.currentSymbolTable.entries.containsKey(localVariable.getName())) {
+			this.moreThanOnceError = new InitializedMoreThanOnceError(
+					localVariable.getLine(), localVariable.getName(), IDSymbolsKinds.Variable);
+			return false;
+		}
+		
+		this.currentSymbolTable.entries.put(localVariable.getName(),
+				new SymbolEntry(localVariable.getName(), localVariable.getType(), IDSymbolsKinds.Variable));
+		
+		if (localVariable.hasInitValue())
+			localVariable.getInitValue().accept(this);
+		localVariable.setSymbolsTable(this.currentSymbolTable);
+		
+		return true;
 	}
 
 	@Override
 	public Object visit(VariableLocation location) {
+		if (location.isExternal()) {
+			location.getLocation().accept(this);
+		}
+		location.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(ArrayLocation location) {
+		location.getArray().accept(this);
+		location.getIndex().accept(this);
+		location.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(StaticCall call) {
+		for (Expression arg : call.getArguments())
+			arg.accept(this);
+
+		call.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(VirtualCall call) {
+		for (Expression arg : call.getArguments())
+			arg.accept(this);
+		
+		call.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
@@ -175,6 +297,9 @@ public class TableScanner implements Visitor {
 
 	@Override
 	public Object visit(NewArray newArray) {
+		newArray.getSize().accept(this);
+		newArray.setSymbolsTable(this.currentSymbolTable);
+		
 		return null;
 	}
 
@@ -185,21 +310,31 @@ public class TableScanner implements Visitor {
 
 	@Override
 	public Object visit(MathBinaryOp binaryOp) {
+		binaryOp.getFirstOperand().accept(this);
+		binaryOp.getSecondOperand().accept(this);
+		binaryOp.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(LogicalBinaryOp binaryOp) {
+		binaryOp.getFirstOperand().accept(this);
+		binaryOp.getSecondOperand().accept(this);
+		binaryOp.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(MathUnaryOp unaryOp) {
+		unaryOp.getOperand().accept(this);
+		unaryOp.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
+		unaryOp.getOperand().accept(this);
+		unaryOp.setSymbolsTable(this.currentSymbolTable);
 		return null;
 	}
 
@@ -210,31 +345,71 @@ public class TableScanner implements Visitor {
 
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
-		return null;
+		return (Boolean)expressionBlock.accept(this);
 	}
 	
 	private Object methodVisit(Method method) {
 		SymbolTable methodTable = new SymbolTable(method.getName());
-		SymbolTable currentClassSymbolTable;
-		for (Formal formal : method.getFormals()) {
-			methodTable.entries.put(formal.getName(),
-					new SymbolEntry(formal.getName(), formal.getType(), SymbolEntry.Kind.Varable));
+		methodTable.parentSymbolTable = this.currentSymbolTable;
+		methodTable.parentSymbolTable.children.put(method.getName(), methodTable);
+		methodTable.parentSymbolTable.entries.put(method.getName(),
+				new SymbolEntry(method.getName(), method.getType(), IDSymbolsKinds.Method));
+		this.currentSymbolTable = methodTable;
+		
+		for (Formal formal : method.getFormals()) { 
+			if (!(Boolean)formal.accept(this))
+				return false;
 		}
 		
 		for (Statement stmnt : method.getStatements()) {
-			if (stmnt instanceof LocalVariable) {
-				LocalVariable localVar = (LocalVariable)stmnt;
-				methodTable.entries.put(localVar.getName(),
-						new SymbolEntry(localVar.getName(), localVar.getType(), SymbolEntry.Kind.Varable));
-			}
-			if (stmnt instanceof StatementsBlock) {
-				currentClassSymbolTable = (SymbolTable)stmnt.accept(this);
-				
-				currentClassSymbolTable.parentSymbolTable = methodTable;
-				methodTable.children.add(currentClassSymbolTable);
-			}
+			if (!(Boolean)stmnt.accept(this))
+				return false;
 		}
 		
-		return methodTable;
+		this.currentSymbolTable = methodTable.parentSymbolTable;
+		method.setSymbolsTable(this.currentSymbolTable);
+		
+		return true;
+	}
+	
+	private class ExtnendingNonExistingClassError {
+		private int line;
+		private String name;
+		
+		public ExtnendingNonExistingClassError(int line, String name) {
+			this.line = line;
+			this.name = name;
+		}
+		
+		public int getLine() {
+			return line;
+		}
+		
+		public String getMassage() {
+			return this.name + " class must be initialized before called to be extended";
+		}
+		
+	}
+	
+	private class InitializedMoreThanOnceError {
+		private int line;
+		private String name;
+		private IDSymbolsKinds kind;
+		
+		public InitializedMoreThanOnceError(int line, String name, IDSymbolsKinds kind) {
+			this.line = line;
+			this.name = name;
+			this.kind = kind;
+		}
+		
+		public int getLine() {
+			return line;
+		}
+		
+		public String getMassage() {
+			String msg = this.kind + " " + this.name + " " + "was initialized more than once";
+			return msg;
+		}
+		
 	}
 }

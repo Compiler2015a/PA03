@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
+import IC.SemanticAnalysis.SemanticError;
+import IC.SemanticAnalysis.SymbolsInstanceAnalyzer;
 import IC.SymbolsTable.*;
 
 
@@ -18,7 +20,7 @@ public class Compiler {
 			System.exit(-1);
 		}
 		
-		
+		ICClass libRoot = null;
 		try {
 			if(args.length == 2 && args[1].substring(0, 2).equals("-L")) { //if library required
 				//parse library file
@@ -28,7 +30,7 @@ public class Compiler {
 				LibParser libParser = new LibParser(libScanner);
 
 				Symbol libParseSymbol = libParser.parse();
-				ICClass libRoot = (ICClass) libParseSymbol.value;
+				libRoot = (ICClass) libParseSymbol.value;
 				
 				
 			// Pretty-print the program to System.out
@@ -44,6 +46,8 @@ public class Compiler {
 
 			Symbol parseSymbol = parser.parse();
 			Program ICRoot = (Program) parseSymbol.value;
+			if (libRoot != null)
+				ICRoot.getClasses().add(libRoot);
 			
 			System.out.println("Parsed " + args[0] +" successfully!");
 			
@@ -53,15 +57,20 @@ public class Compiler {
 			TableScanner tableScanner = new TableScanner();
 			tableScanner.Init();
 			System.out.println(printer.visit(ICRoot));
-			SymbolTable root = (SymbolTable)tableScanner.visit(ICRoot);
-
+			if (!(Boolean)tableScanner.visit(ICRoot))
+				tableScanner.getSemanticError();
+			SymbolsInstanceAnalyzer symbolsInstanceAnalyzer = new SymbolsInstanceAnalyzer();
+			if (!(Boolean)symbolsInstanceAnalyzer.visit(ICRoot))
+				symbolsInstanceAnalyzer.getSemanticError();
 
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
 		} catch (LexicalError e) {
 			System.out.println(e.getMessage());
+		} catch (SemanticError e) {
+			System.out.println(e.getMessage());
 		} catch (Exception e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 }

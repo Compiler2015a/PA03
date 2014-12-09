@@ -5,15 +5,16 @@ import IC.AST.Type;
 public class SymbolEntry {
 	  private String id;
 	  private Type type;
-	  private Kind kind;
+	  private IDSymbolsKinds kind;
 	  
-	  public SymbolEntry(String id, Type type, Kind kind) {
+	  public SymbolEntry(String id, Type type, IDSymbolsKinds kind) {
 		  this.id =id;
 		  this.type = type;
 		  this.kind = kind;
 	  }
-	  
-	  public enum Kind {
-		  Class, Method, Varable
-	  }
+
+	public IDSymbolsKinds getKind() {
+		return kind;
+	}
+
 }

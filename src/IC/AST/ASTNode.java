@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.SymbolsTable.*;
+
 /**
  * Abstract AST node base class.
  * 
@@ -8,6 +10,7 @@ package IC.AST;
 public abstract class ASTNode {
 
 	private int line;
+	private SymbolTable symbolsTable;
 
 	/**
 	 * Double dispatch method, to allow a visitor to visit a specific subclass.
@@ -26,11 +29,19 @@ public abstract class ASTNode {
 	 *            The line number.
 	 */
 	protected ASTNode(int line) {
+		this.symbolsTable = null;
 		this.line = line;
 	}
 
 	public int getLine() {
 		return line;
 	}
-
+	
+	public void setSymbolsTable(SymbolTable table) {
+		this.symbolsTable = table;
+	}
+	
+	public SymbolTable getSymbolsTable() {
+		return symbolsTable;
+	}
 }

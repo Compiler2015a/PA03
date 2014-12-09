@@ -1,8 +1,6 @@
 package IC.SymbolsTable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class SymbolTable {
@@ -11,12 +9,12 @@ public class SymbolTable {
 	  public String id;
 	  public Map<String,SymbolEntry> entries;
 	  public SymbolTable parentSymbolTable;
-	  public List<SymbolTable> children;
+	  public Map<String, SymbolTable> children;
 	  
 	  public SymbolTable(String id) {
 	    this.id = id;
 	    this.entries = new HashMap<String,SymbolEntry>();
-	    this.children = new ArrayList<SymbolTable>();
+	    this.children = new HashMap<String, SymbolTable>();
 	    this.parentSymbolTable = null;
 	  }
 

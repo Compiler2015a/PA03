@@ -36,5 +36,4 @@ public class StaticCall extends Call {
 	public String getClassName() {
 		return className;
 	}
-
 }
