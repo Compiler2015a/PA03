@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
+import IC.SymbolsTable.*;
 
 
 public class Compiler {
@@ -48,7 +49,12 @@ public class Compiler {
 			
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
+			
+			TableScanner tableScanner = new TableScanner();
+			tableScanner.Init();
 			System.out.println(printer.visit(ICRoot));
+			SymbolTable root = (SymbolTable)tableScanner.visit(ICRoot);
+
 
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
