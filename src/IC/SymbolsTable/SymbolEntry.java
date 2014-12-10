@@ -2,7 +2,12 @@ package IC.SymbolsTable;
 
 import IC.AST.Type;
 
+
+
 public class SymbolEntry {
+	
+	
+
 	  private String id;
 	  private Type type;
 	  private IDSymbolsKinds kind;

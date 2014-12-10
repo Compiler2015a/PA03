@@ -53,7 +53,7 @@ public class TableScanner implements Visitor {
 		virtualClsTable.parentSymbolTable = this.currentSymbolTable;
 		virtualClsTable.parentSymbolTable.children.put(icClass.getName() + "_virtual", virtualClsTable);
 		virtualClsTable.parentSymbolTable.entries.put(icClass.getName(),
-				new SymbolEntry(icClass.getName(), null, IDSymbolsKinds.Class));
+				new SymbolEntry(icClass.getName(), null, IDSymbolsKinds.CLASS));
 		staticClsTable.parentSymbolTable = this.currentSymbolTable;
 		staticClsTable.parentSymbolTable.children.put(icClass.getName() + "_static", staticClsTable);
 	
@@ -102,11 +102,11 @@ public class TableScanner implements Visitor {
 	public Object visit(Field field) {
 		if (this.currentSymbolTable.entries.containsKey(field.getName())) {
 			this.moreThanOnceError = new InitializedMoreThanOnceError(
-					field.getLine(), field.getName(), IDSymbolsKinds.Variable);
+					field.getLine(), field.getName(), IDSymbolsKinds.VARIABLE);
 			return false;
 		}
 		this.currentSymbolTable.entries.put(field.getName(),
-				new SymbolEntry(field.getName(), field.getType(), IDSymbolsKinds.Variable));
+				new SymbolEntry(field.getName(), field.getType(), IDSymbolsKinds.VARIABLE));
 		
 		field.setSymbolsTable(this.currentSymbolTable);
 		
@@ -132,12 +132,12 @@ public class TableScanner implements Visitor {
 	public Object visit(Formal formal) {
 		if (this.currentSymbolTable.entries.containsKey(formal.getName())) {
 			this.moreThanOnceError = new InitializedMoreThanOnceError(
-					formal.getLine(), formal.getName(), IDSymbolsKinds.Variable);
+					formal.getLine(), formal.getName(), IDSymbolsKinds.VARIABLE);
 			return false;
 		}
 		
 		this.currentSymbolTable.entries.put(formal.getName(),
-				new SymbolEntry(formal.getName(), formal.getType(), IDSymbolsKinds.Variable));
+				new SymbolEntry(formal.getName(), formal.getType(), IDSymbolsKinds.VARIABLE));
 		formal.setSymbolsTable(this.currentSymbolTable);
 		
 		return true;
@@ -236,12 +236,12 @@ public class TableScanner implements Visitor {
 	public Object visit(LocalVariable localVariable) {
 		if (this.currentSymbolTable.entries.containsKey(localVariable.getName())) {
 			this.moreThanOnceError = new InitializedMoreThanOnceError(
-					localVariable.getLine(), localVariable.getName(), IDSymbolsKinds.Variable);
+					localVariable.getLine(), localVariable.getName(), IDSymbolsKinds.VARIABLE);
 			return false;
 		}
 		
 		this.currentSymbolTable.entries.put(localVariable.getName(),
-				new SymbolEntry(localVariable.getName(), localVariable.getType(), IDSymbolsKinds.Variable));
+				new SymbolEntry(localVariable.getName(), localVariable.getType(), IDSymbolsKinds.VARIABLE));
 		
 		if (localVariable.hasInitValue())
 			localVariable.getInitValue().accept(this);
@@ -353,7 +353,7 @@ public class TableScanner implements Visitor {
 		methodTable.parentSymbolTable = this.currentSymbolTable;
 		methodTable.parentSymbolTable.children.put(method.getName(), methodTable);
 		methodTable.parentSymbolTable.entries.put(method.getName(),
-				new SymbolEntry(method.getName(), method.getType(), IDSymbolsKinds.Method));
+				new SymbolEntry(method.getName(), method.getType(), IDSymbolsKinds.METHOD));
 		this.currentSymbolTable = methodTable;
 		
 		for (Formal formal : method.getFormals()) { 
