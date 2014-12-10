@@ -151,9 +151,9 @@ public class SymbolsInstanceAnalyzer implements Visitor{
 			if (!(Boolean)location.getLocation().accept(this))
 				return false;
 		
-		if (!tableLookUp(location.getSymbolsTable(), location.getName(), IDSymbolsKinds.Variable)) {
+		if (!tableLookUp(location.getSymbolsTable(), location.getName(), IDSymbolsKinds.VARIABLE)) {
 			this.semanticErrorMsg = new NotInctanciatedError
-					(location.getLine(), location.getName(), IDSymbolsKinds.Variable);
+					(location.getLine(), location.getName(), IDSymbolsKinds.VARIABLE);
 				return false;
 		}
 		
@@ -167,14 +167,14 @@ public class SymbolsInstanceAnalyzer implements Visitor{
 	
 	@Override
 	public Object visit(StaticCall call) {
-		if (!tableLookUp(call.getSymbolsTable(), call.getClassName(), IDSymbolsKinds.Class)) {
+		if (!tableLookUp(call.getSymbolsTable(), call.getClassName(), IDSymbolsKinds.CLASS)) {
 			this.semanticErrorMsg = new NotInctanciatedError
-					(call.getLine(), call.getClassName(), IDSymbolsKinds.Class);
+					(call.getLine(), call.getClassName(), IDSymbolsKinds.CLASS);
 			return false;
 		}
-		if (!tableLookUp(call.getSymbolsTable(), call.getName(), IDSymbolsKinds.Method)) {
+		if (!tableLookUp(call.getSymbolsTable(), call.getName(), IDSymbolsKinds.STATIC_METHOD)) {
 			this.semanticErrorMsg = new NotInctanciatedError
-					(call.getLine(), call.getClassName(), IDSymbolsKinds.Method);
+					(call.getLine(), call.getClassName(), IDSymbolsKinds.STATIC_METHOD);
 			return false;
 		}
 		
@@ -192,9 +192,9 @@ public class SymbolsInstanceAnalyzer implements Visitor{
 			if (!(Boolean)call.getLocation().accept(this))
 				return false;
 		
-		if (!tableLookUp(call.getSymbolsTable(), call.getName(), IDSymbolsKinds.Method)) {
+		if (!tableLookUp(call.getSymbolsTable(), call.getName(), IDSymbolsKinds.VIRTUAL_METHOD)) {
 			this.semanticErrorMsg = new NotInctanciatedError
-					(call.getLine(), call.getName(), IDSymbolsKinds.Method);
+					(call.getLine(), call.getName(), IDSymbolsKinds.VIRTUAL_METHOD);
 			return false;
 		}
 		
