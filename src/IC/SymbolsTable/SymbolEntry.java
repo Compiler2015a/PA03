@@ -6,10 +6,8 @@ import IC.AST.Type;
 
 public class SymbolEntry {
 	
-	
-
-	  private String id;
-	  private Type type;
+	private String id;
+	private Type type;
 	  private IDSymbolsKinds kind;
 	  
 	  public SymbolEntry(String id, Type type, IDSymbolsKinds kind) {
@@ -20,6 +18,10 @@ public class SymbolEntry {
 
 	public IDSymbolsKinds getKind() {
 		return kind;
+	}
+	
+	public String getId() {
+		return id;
 	}
 
 }
