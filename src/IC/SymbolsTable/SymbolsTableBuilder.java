@@ -199,6 +199,7 @@ public class SymbolsTableBuilder implements Visitor {
 	public Object visit(StatementsBlock statementsBlock) {
 		this.blockCounter++;
 		SymbolTable blockStmntSymbolTable = new SymbolTable("block#" + blockCounter);
+		blockStmntSymbolTable.parentSymbolTable = statementsBlock.getSymbolsTable();
 		for (Statement stmnt : statementsBlock.getStatements()) {
 			stmnt.setSymbolsTable(blockStmntSymbolTable);
 			if (!(Boolean)stmnt.accept(this))
