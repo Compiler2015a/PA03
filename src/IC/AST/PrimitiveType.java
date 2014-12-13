@@ -31,4 +31,10 @@ public class PrimitiveType extends Type {
 	public String getName() {
 		return type.getDescription();
 	}
+	
+	@Override
+	public boolean nullAssignable() {
+		return type == DataTypes.STRING ;
+	}
+
 }

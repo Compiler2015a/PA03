@@ -1,12 +1,13 @@
 package IC.SymbolsTable;
 
+import IC.Types.Type;
 public class SymbolEntry {
 	
 	private String id;
-	private String type; //TODO Should be changed to typeEntry
+	private Type type;
 	private IDSymbolsKinds kind;
 	  
-	public SymbolEntry(String id, String type, IDSymbolsKinds kind) {
+	public SymbolEntry(String id, Type type, IDSymbolsKinds kind) {
 		this.id =id;
 	    this.type = type;
 	    this.kind = kind;
@@ -16,7 +17,7 @@ public class SymbolEntry {
 		return id;
 	}
 
-	public String getType() {
+	public Type getType() {
 		return type;
 	}
 	

@@ -8,8 +8,8 @@ import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
-import IC.SemanticAnalysis.SymbolsInstanceAnalyzer;
 import IC.SymbolsTable.*;
+
 import IC.Types.*;
 
 public class Compiler {
@@ -48,19 +48,26 @@ public class Compiler {
 			Symbol parseSymbol = parser.parse();
 			Program ICRoot = (Program) parseSymbol.value;
 			if (libRoot != null)
-				ICRoot.getClasses().add(libRoot);
+				ICRoot.getClasses().add(0, libRoot);
 			
 			System.out.println("Parsed " + args[0] +" successfully!");
 			
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
-			
-			SymbolsTableBuilder s = new SymbolsTableBuilder();
+			TypeTableBuilder typeTableBuilder = new TypeTableBuilder();
+			typeTableBuilder.findMainMethod(ICRoot);
+			typeTableBuilder.visit(ICRoot);
+			typeTableBuilder.getBuiltTypeTable().printTable();
+			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable());
 			s.buildSymbolTables(ICRoot);
 			
 			//validates that all the return values are correct
 			ReturnValidator rv = new ReturnValidator();
 			ICRoot.accept(rv);
+			
+			//validates that all the types are correct
+			TypeValidator tv = new TypeValidator();
+			ICRoot.accept(tv);
 			
 
 		} catch (FileNotFoundException e) {
@@ -68,6 +75,8 @@ public class Compiler {
 		} catch (LexicalError e) {
 			System.out.println(e.getMessage());
 		} catch (SemanticError e) {
+			System.out.println(e.getMessage());
+		} catch (TypeException e) {
 			System.out.println(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
