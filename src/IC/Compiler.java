@@ -9,6 +9,7 @@ import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SymbolsInstanceAnalyzer;
 import IC.SymbolsTable.*;
+import IC.Types.TypeTableBuilder;
 
 
 public class Compiler {
@@ -47,12 +48,15 @@ public class Compiler {
 			Symbol parseSymbol = parser.parse();
 			Program ICRoot = (Program) parseSymbol.value;
 			if (libRoot != null)
-				ICRoot.getClasses().add(libRoot);
+				ICRoot.getClasses().add(0, libRoot);
 			
 			System.out.println("Parsed " + args[0] +" successfully!");
 			
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
+			TypeTableBuilder typeTableBuilder = new TypeTableBuilder();
+			typeTableBuilder.findMainMethod(ICRoot);
+			typeTableBuilder.visit(ICRoot);
 			
 			SymbolsTableBuilder s = new SymbolsTableBuilder();
 			s.buildSymbolTables(ICRoot);

@@ -24,6 +24,11 @@ class IntType extends Type
 	{
 		super("IntType");
 	}
+	
+	@Override
+	public String toString() {
+		return "int";
+	}
 }
 
 class BoolType extends Type 
@@ -31,6 +36,24 @@ class BoolType extends Type
 	public BoolType()
 	{
 		super("BoolType");
+	}
+	
+	@Override
+	public String toString() {
+		return "boolean";
+	}
+}
+
+class NullType extends Type 
+{
+	public NullType()
+	{
+		super("NullType");
+	}
+	
+	@Override
+	public String toString() {
+		return "null";
 	}
 }
 
@@ -40,29 +63,23 @@ class StringType extends Type
 	{
 		super("StringType");
 	}
-}
-
-class DoubleType extends Type 
-{
-	public DoubleType()
-	{
-		super("DoubleType");
+	
+	@Override
+	public String toString() {
+		return "string";
 	}
 }
 
-class CharType extends Type 
+class VoidType extends Type 
 {
-	public CharType()
+	public VoidType()
 	{
-		super("CharType");
+		super("VoidType");
 	}
-}
-
-class FloatType extends Type 
-{
-	public FloatType()
-	{
-		super("FloatType");
+	
+	@Override
+	public String toString() {
+		return "void";
 	}
 }
 
@@ -73,6 +90,11 @@ class ArrayType extends Type
 	{
 		super("ArrayType");
 		this.elemType=elemType;
+	}
+	
+	@Override
+	public String toString() {
+		return elemType.toString() + "[]";
 	}
 }
 
@@ -86,14 +108,39 @@ class MethodType extends Type
 		this.paramTypes=paramTypes;
 		this.returnType=returnType;
 	}
+	
+	@Override
+	public String toString() {
+		String paramTypesStr = "";
+		for (int i = 0; i < paramTypes.length; i++) {
+			if (i == 0)
+				paramTypesStr += paramTypes[i].toString();
+			else
+				paramTypesStr += ", " + paramTypes[i].toString();
+		}
+		return paramTypesStr + " -> " + returnType.toString();
+	}
 }
 
 class ClassType extends Type 
 {   
 	ICClass classAST;
+	Integer superClassTypeId;
+
+
 	public ClassType(ICClass classAST)
 	{
 		super("ClassType");
-		this.classAST=classAST;
+		this.classAST = classAST;
+	}
+	
+	public Integer getSuperClassTypeId() {
+		if (!classAST.hasSuperClass())
+			return null;
+		return superClassTypeId;
+	}
+
+	public void setSuperClassTypeId(Integer superClassTypeId) {
+		this.superClassTypeId = superClassTypeId;
 	}
 }
