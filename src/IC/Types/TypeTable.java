@@ -17,7 +17,6 @@ public class TypeTable {
 	public static Type charType = new CharType();
 	public static Type floatType = new FloatType();
 	
-	//...    
 	// Returns unique array type object
 	public static ArrayType arrayType(Type elemType) {
 		if (uniqueArrayTypes.containsKey(elemType))
@@ -29,12 +28,12 @@ public class TypeTable {
 		{
 			// object doesn’t exist – create and return it
 			ArrayType arrt = new ArrayType(elemType);
-			//uniqueArrayTypes.put(elemType,ArrayType);
+			uniqueArrayTypes.put(elemType,arrt);
 			return arrt;
 		}
 	}
 	public static ClassType classType(ICClass classAST) {
-		if (uniqueArrayTypes.containsKey(classAST))
+		if (uniqueClassTypes.containsKey(classAST))
 		{
 			// array type object already created – return it
 			return uniqueClassTypes.get(classAST);
@@ -43,7 +42,7 @@ public class TypeTable {
 		{
 			// object doesn’t exist – create and return it
 			ClassType clst = new ClassType(classAST);
-			//uniqueClassTypes.put(classAST,ClassType);
+			uniqueClassTypes.put(classAST.getName(),clst);
 			return clst;
 		}
 	}
