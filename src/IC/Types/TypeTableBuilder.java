@@ -53,7 +53,11 @@ public class TypeTableBuilder implements Visitor {
 		for (ICClass icClass : program.getClasses()) {
 			for (Method method : icClass.getMethods()) {
 				if (method.getName().equals("main")) {
-					method.accept(this);
+					for (Formal formal : method.getFormals())
+						formal.accept(this);
+					method.getType().accept(this);
+					
+					builtTypeTable.addMethodType(method);
 					return;
 				}
 			}

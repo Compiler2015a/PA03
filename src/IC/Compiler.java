@@ -8,14 +8,9 @@ import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
-import IC.SemanticAnalysis.SymbolsInstanceAnalyzer;
 import IC.SymbolsTable.*;
-<<<<<<< HEAD
-import IC.Types.TypeTableBuilder;
 
-=======
 import IC.Types.*;
->>>>>>> origin/master
 
 public class Compiler {
 
@@ -62,13 +57,13 @@ public class Compiler {
 			TypeTableBuilder typeTableBuilder = new TypeTableBuilder();
 			typeTableBuilder.findMainMethod(ICRoot);
 			typeTableBuilder.visit(ICRoot);
-			
+			typeTableBuilder.getBuiltTypeTable().printTable();
 			SymbolsTableBuilder s = new SymbolsTableBuilder();
 			s.buildSymbolTables(ICRoot);
 			
 			//validates that all the return values are correct
-			ReturnValidator rv = new ReturnValidator();
-			ICRoot.accept(rv);
+			//ReturnValidator rv = new ReturnValidator();
+			//ICRoot.accept(rv);
 			
 
 		} catch (FileNotFoundException e) {

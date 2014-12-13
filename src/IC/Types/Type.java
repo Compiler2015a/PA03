@@ -143,4 +143,9 @@ class ClassType extends Type
 	public void setSuperClassTypeId(Integer superClassTypeId) {
 		this.superClassTypeId = superClassTypeId;
 	}
+	
+	@Override
+	public String toString() {
+		return classAST.getName();
+	}
 }

@@ -127,7 +127,7 @@ non terminal List<String> extra_fields;
 non terminal Method method;
 non terminal List<Formal> formal_list, extra_formals;
 non terminal Formal formal;
-non terminal Type type, method_type;
+non terminal Type type;
 non terminal List<Statement> stmnt_list; 
 non terminal Statement stmnt, elseStmn;
 non terminal Expression expr;
@@ -201,7 +201,7 @@ extra_fields ::= COMMA ID:fName extra_fields:fNamesl
  				{: RESULT = new ArrayList<String>(); :}
 ;
 
-method ::= STATIC_KEYWORD method_type:t ID:mName LP formal_list:fl RP LB stmnt_list:sl RB 
+method ::= STATIC_KEYWORD type:t ID:mName LP formal_list:fl RP LB stmnt_list:sl RB 
 			{: RESULT = new StaticMethod(t, mName.toString(), fl, sl); :}
 			| STATIC_KEYWORD VOID_KEYWORD:v ID:mName LP formal_list:fl RP LB stmnt_list:sl RB 
 			{: RESULT = new StaticMethod(new PrimitiveType(vleft, IC.DataTypes.VOID), mName.toString(), fl, sl); :}
@@ -226,12 +226,6 @@ extra_formals ::= COMMA formal:f extra_formals:ef
 formal ::= type:t ID:fName
 		{: RESULT = new Formal(t, fName.toString()); :}
 ;
-
-/*method_type ::= VOID_KEYWORD:v
-		{: RESULT = new PrimitiveType(vleft, IC.DataTypes.VOID); :}
-		| type:t
-		{: RESULT = t; :}
-;*/
 
 type ::= type:t LC RC
 		{: t.incrementDimension(); RESULT = t; :}

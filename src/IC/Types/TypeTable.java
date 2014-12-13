@@ -1,6 +1,10 @@
 package IC.Types;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,14 +24,53 @@ public class TypeTable {
 		this.uniqueClassTypes = new HashMap<String,ClassType>();
 		this.uniqueMethodTypes = new HashMap<String,MethodType>();
 		
-		this.values = new HashMap<Integer, Type>();
+		this.values = new HashMap<Type, Integer>();
 	}
 	
 	public void printTable() {
+		System.out.println("\t" + values.get(intType) + ": Primitive type: " + intType.toString());
+		System.out.println("\t" + values.get(boolType) + ": Primitive type: " + boolType.toString());
+		System.out.println("\t" + values.get(nullType) + ": Primitive type: " + nullType.toString());
+		System.out.println("\t" + values.get(stringType) + ": Primitive type: " + stringType.toString());
+		System.out.println("\t" + values.get(voidType) + ": Primitive type: " + voidType.toString());
 		
+		List<Map.Entry<String,ClassType>> sorted_uniqueClassTypes =
+	            new ArrayList<Map.Entry<String,ClassType>>( uniqueClassTypes.entrySet() );
+		Collections.sort(sorted_uniqueClassTypes, new Comparator<Map.Entry<String,ClassType>>() {
+	           public int compare( Map.Entry<String,ClassType> o1, Map.Entry<String,ClassType> o2 )
+	            {
+	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
+	            }
+		});
+		for (Map.Entry<String,ClassType> entry : sorted_uniqueClassTypes) 
+			System.out.println("\t" + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
+		
+		List<Map.Entry<Type,ArrayType>> sorted_uniqueArrayTypes =
+	            new ArrayList<Map.Entry<Type,ArrayType>>( uniqueArrayTypes.entrySet() );
+		Collections.sort(sorted_uniqueArrayTypes, new Comparator<Map.Entry<Type,ArrayType>>() {
+	           public int compare( Map.Entry<Type,ArrayType> o1, Map.Entry<Type,ArrayType> o2 )
+	            {
+	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
+	            }
+		});
+		
+		for (Map.Entry<Type,ArrayType> entry : sorted_uniqueArrayTypes) 
+			System.out.println("\t" + values.get(entry.getValue()) + ": Array type: " + entry.getValue().toString());
+		
+		List<Map.Entry<String,MethodType>> sorted_uniqueMethodTypes =
+	            new ArrayList<Map.Entry<String,MethodType>>( uniqueMethodTypes.entrySet() );
+		Collections.sort(sorted_uniqueMethodTypes, new Comparator<Map.Entry<String,MethodType>>() {
+	           public int compare( Map.Entry<String,MethodType> o1, Map.Entry<String,MethodType> o2 )
+	            {
+	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
+	            }
+		});
+		
+		for (Map.Entry<String,MethodType> entry : sorted_uniqueMethodTypes) 
+			System.out.println("\t" + values.get(entry.getValue()) + ": Method type: {" + entry.getValue().toString() + "}");
 	}
 	
-	private Map<Integer, Type> values;
+	private Map<Type, Integer> values;
 
 	// Maps element types to array types
 	private Map<Type,ArrayType> uniqueArrayTypes;
@@ -42,7 +85,7 @@ public class TypeTable {
 	
 	private int idCounter;
 	
-	public Map<Integer, Type> getValues() {
+	public Map<Type, Integer> getValues() {
 		return values;
 	}
 	
@@ -52,11 +95,11 @@ public class TypeTable {
 		this.nullType = new NullType();
 		this.stringType = new StringType();
 		this.voidType = new VoidType();
-		values.put(1, intType);
-		values.put(2, boolType);
-		values.put(3, nullType);
-		values.put(4, stringType);
-		values.put(5, voidType);
+		values.put(intType, 1);
+		values.put(boolType, 2);
+		values.put(nullType, 3);
+		values.put(stringType, 4);
+		values.put(voidType, 5);
 		this.idCounter = 6;
 	}
 	
@@ -80,10 +123,10 @@ public class TypeTable {
 			if (!uniqueClassTypes.containsKey(classAST.getSuperClassName())) {
 				// TODO Add error handling of extending a non existing class
 			}
-			clst.setSuperClassTypeId(findIdOfType(
+			clst.setSuperClassTypeId(values.get(
 					uniqueClassTypes.get(classAST.getSuperClassName())));
 		}
-		values.put(idCounter, clst);
+		values.put(clst, idCounter);
 		idCounter++;
 	}
 	
@@ -96,7 +139,7 @@ public class TypeTable {
 		if (uniqueMethodTypes.containsKey(m.toString()))
 			return;
 		uniqueMethodTypes.put(m.toString(), m);
-		values.put(idCounter, m);
+		values.put(m, idCounter);
 		idCounter++;
 	}
 	
@@ -138,7 +181,7 @@ public class TypeTable {
 		
 		ArrayType arrt = new ArrayType(elemType);
 		uniqueArrayTypes.put(elemType, arrt);
-		values.put(idCounter, arrt);
+		values.put(arrt, idCounter);
 		idCounter++;
 		return arrt;
 	}
@@ -150,14 +193,5 @@ public class TypeTable {
 		
 		return (ArrayType)currArrType;
 	}
-	
-	private int findIdOfType(Type type) {
-		for (int key : values.keySet())
-			if (values.get(key).equals(type))
-				return key;
-		
-		return -1;
-	}
-
 }
 
