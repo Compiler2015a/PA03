@@ -2,7 +2,7 @@ package IC.SymbolsTable;
 
 import java.util.LinkedList;
 import java.util.Queue;
-
+import IC.Types.*;
 import IC.AST.*;
 
 public class SymbolsTableBuilder implements Visitor {
@@ -11,12 +11,16 @@ public class SymbolsTableBuilder implements Visitor {
 	private SymbolTable rootSymbolTable;
 	private SymbolTable currentClassSymbolTablePoint;
 	
+	private TypeTable typeTable;
+	
 	int blockCounter;
 	
-	public SymbolsTableBuilder() {
+	public SymbolsTableBuilder(TypeTable typeTable) {
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
 		this.rootSymbolTable = new SymbolTable("globals#");
 		this.currentClassSymbolTablePoint = null;
+		
+		this.typeTable = typeTable;
 	}
 
 	public SymbolTable buildSymbolTables(Program root) {
@@ -40,7 +44,8 @@ public class SymbolsTableBuilder implements Visitor {
 		for (ICClass iccls : program.getClasses()) {
 			nodeHandlingQueue.add(iccls);
 			if (!addEntryAndCheckDuplication(programSymbolTable, 
-					new SymbolEntry(iccls.getName(), iccls.getName(), IDSymbolsKinds.CLASS))) {
+					new SymbolEntry(iccls.getName(), typeTable.uniqueClassTypes.get(iccls.getName()), 
+							IDSymbolsKinds.CLASS))) {
 				// TODO Add error handling of duplicated variable
 			}
 			SymbolTable icclsParentSymbolTable;
@@ -67,7 +72,8 @@ public class SymbolsTableBuilder implements Visitor {
 		for (Field field : icClass.getFields()) {
 			nodeHandlingQueue.add(field);
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
-					new SymbolEntry(field.getName(), null, IDSymbolsKinds.FIELD))) {
+					new SymbolEntry(field.getName(), 
+							typeTable.getTypeFromASTTypeNode(field.getType()), IDSymbolsKinds.FIELD))) {
 				// TODO Add error handling of duplicated variable
 			}
 			field.setSymbolsTable(currentClassSymbolTable);
@@ -76,7 +82,8 @@ public class SymbolsTableBuilder implements Visitor {
 		for (Method method : icClass.getMethods()) {
 			nodeHandlingQueue.add(method);
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
-					new SymbolEntry(method.getName(), null, getMethodKind(method)))) {
+					new SymbolEntry(method.getName(), 
+							typeTable.getTypeFromASTTypeNode(method.getType()), getMethodKind(method)))) {
 				// TODO Add error handling of duplicated variable
 			}
 			method.setSymbolsTable(currentClassSymbolTable);
@@ -110,6 +117,11 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(Formal formal) {
+		if (!addEntryAndCheckDuplication(formal.getSymbolsTable(), 
+				new SymbolEntry(formal.getName(), typeTable.getTypeFromASTTypeNode(formal.getType()), IDSymbolsKinds.FORMAL))) {
+			// TODO Add error handling of duplicated variable
+		}
+		
 		return true;
 	}
 
@@ -212,7 +224,7 @@ public class SymbolsTableBuilder implements Visitor {
 	@Override
 	public Object visit(LocalVariable localVariable) {
 		if (!addEntryAndCheckDuplication(localVariable.getSymbolsTable(), 
-				new SymbolEntry(localVariable.getName(), localVariable.getType().getName(), IDSymbolsKinds.VARIABLE))) {
+				new SymbolEntry(localVariable.getName(), typeTable.getTypeFromASTTypeNode(localVariable.getType()), IDSymbolsKinds.VARIABLE))) {
 			// TODO Add error handling of duplicated variable
 		}
 		
@@ -241,8 +253,8 @@ public class SymbolsTableBuilder implements Visitor {
 			if (varEntry == null) {
 				// TODO Add error handling for uninitialized variable
 			}
-			if (varEntry.getType() != null) //TODO should be changed to check if this is a class type
-				this.currentClassSymbolTablePoint = findSymbolTable(this.rootSymbolTable, varEntry.getType());
+			if (varEntry.getType().isClassType()) 
+				this.currentClassSymbolTablePoint = findSymbolTable(this.rootSymbolTable, varEntry.getType().toString());
 			
 				
 		}
@@ -396,12 +408,9 @@ public class SymbolsTableBuilder implements Visitor {
 		SymbolTable currentMethodSymbolTable = findSymbolTable(
 				method.getSymbolsTable(), method.getName());
 		for (Formal formal : method.getFormals()) {
-			nodeHandlingQueue.add(formal);
-			if (!addEntryAndCheckDuplication(currentMethodSymbolTable, 
-					new SymbolEntry(formal.getName(), null, IDSymbolsKinds.FORMAL))) {
-				// TODO Add error handling of duplicated variable
-			}
 			formal.setSymbolsTable(currentMethodSymbolTable);
+			if (!(Boolean)formal.accept(this))
+				return false;
 		}
 		
 		for (Statement stmnt : method.getStatements()) {

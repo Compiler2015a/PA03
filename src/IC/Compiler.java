@@ -58,7 +58,7 @@ public class Compiler {
 			typeTableBuilder.findMainMethod(ICRoot);
 			typeTableBuilder.visit(ICRoot);
 			typeTableBuilder.getBuiltTypeTable().printTable();
-			SymbolsTableBuilder s = new SymbolsTableBuilder();
+			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable());
 			s.buildSymbolTables(ICRoot);
 			
 			//validates that all the return values are correct

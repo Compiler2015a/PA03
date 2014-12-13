@@ -16,7 +16,11 @@ public abstract class Type {
 			return true;
 		return false;
 	}
-
+	
+	public boolean isClassType() {
+		return (this instanceof ClassType);
+	}
+	
 }
 class IntType extends Type 
 {

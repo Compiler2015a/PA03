@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +24,40 @@ public class TypeTable {
 		this.uniqueMethodTypes = new HashMap<String,MethodType>();
 		
 		this.values = new HashMap<Type, Integer>();
+	}
+	
+	private Map<Type, Integer> values;
+
+	// Maps element types to array types
+	private Map<Type,ArrayType> uniqueArrayTypes;
+	public Map<String,ClassType> uniqueClassTypes;
+	private Map<String,MethodType> uniqueMethodTypes;
+	
+	private Type intType;
+	private Type boolType;
+	private Type nullType;
+	private Type stringType;
+	private Type voidType;
+	
+	private int idCounter;
+	
+	public Type getTypeFromASTTypeNode(IC.AST.Type typeNode) {
+		if (typeNode instanceof PrimitiveType) {
+			PrimitiveType pt = (PrimitiveType)typeNode;
+			Type primitive = getPrimitiveType(typeNode.getName());
+			if (pt.getDimension() == 0) 
+				return primitive;
+			else
+				return getArrayType(primitive, pt.getDimension());
+		}
+		else {
+			UserType ut = (UserType)typeNode;
+			Type clsType = uniqueClassTypes.get(ut.getName());
+			if (ut.getDimension() == 0)
+				return clsType;
+			else 
+				return getArrayType(clsType, ut.getDimension());
+		}
 	}
 	
 	public void printTable() {
@@ -68,25 +101,6 @@ public class TypeTable {
 		
 		for (Map.Entry<String,MethodType> entry : sorted_uniqueMethodTypes) 
 			System.out.println("\t" + values.get(entry.getValue()) + ": Method type: {" + entry.getValue().toString() + "}");
-	}
-	
-	private Map<Type, Integer> values;
-
-	// Maps element types to array types
-	private Map<Type,ArrayType> uniqueArrayTypes;
-	private Map<String,ClassType> uniqueClassTypes;
-	private Map<String,MethodType> uniqueMethodTypes;
-	
-	private Type intType;
-	private Type boolType;
-	private Type nullType;
-	private Type stringType;
-	private Type voidType;
-	
-	private int idCounter;
-	
-	public Map<Type, Integer> getValues() {
-		return values;
 	}
 	
 	public void addPrimitiveTypes() {
@@ -154,25 +168,6 @@ public class TypeTable {
 			return boolType;
 		
 		return null;
-	}
-	
-	private Type getTypeFromASTTypeNode(IC.AST.Type typeNode) {
-		if (typeNode instanceof PrimitiveType) {
-			PrimitiveType pt = (PrimitiveType)typeNode;
-			Type primitive = getPrimitiveType(typeNode.getName());
-			if (pt.getDimension() == 0) 
-				return primitive;
-			else
-				return getArrayType(primitive, pt.getDimension());
-		}
-		else {
-			UserType ut = (UserType)typeNode;
-			Type clsType = uniqueClassTypes.get(ut.getName());
-			if (ut.getDimension() == 0)
-				return clsType;
-			else 
-				return getArrayType(clsType, ut.getDimension());
-		}
 	}
 	
 	private ArrayType addAndReturnArraySingleType(Type elemType) {
