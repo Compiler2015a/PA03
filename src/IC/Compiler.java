@@ -54,14 +54,12 @@ public class Compiler {
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
 			
-			TableScanner tableScanner = new TableScanner();
-			tableScanner.Init();
-			System.out.println(printer.visit(ICRoot));
-			if (!(Boolean)tableScanner.visit(ICRoot))
-				tableScanner.getSemanticError();
-			SymbolsInstanceAnalyzer symbolsInstanceAnalyzer = new SymbolsInstanceAnalyzer();
-			if (!(Boolean)symbolsInstanceAnalyzer.visit(ICRoot))
-				symbolsInstanceAnalyzer.getSemanticError();
+			SymbolsTableBuilder s = new SymbolsTableBuilder();
+			s.buildSymbolTables(ICRoot);
+			
+			
+			
+			
 
 		} catch (FileNotFoundException e) {
 			System.out.println(e);

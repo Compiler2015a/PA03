@@ -6,7 +6,8 @@ import java.util.Map;
 public class SymbolTable {
 	  /** map from String to Symbol **/	  
 	  
-	  public String id;
+	  private String id;
+
 	  public Map<String,SymbolEntry> entries;
 	  public SymbolTable parentSymbolTable;
 	  public Map<String, SymbolTable> children;
@@ -18,6 +19,9 @@ public class SymbolTable {
 	    this.parentSymbolTable = null;
 	  }
 
+	  public String getId() {
+		return id;
+	  }
 }
 
 

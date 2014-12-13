@@ -7,8 +7,9 @@ public enum IDSymbolsKinds {
 	STATIC_METHOD("Static Method"),
 	VIRTUAL_METHOD("Virtual Method"),
 	METHOD("Method"),
-	VARIABLE("Variable");
-	
+	VARIABLE("Variable"),
+	FORMAL("Formal"),
+	FIELD("Field");
 	 private final String repr;       
 
 		private IDSymbolsKinds(String s) {
