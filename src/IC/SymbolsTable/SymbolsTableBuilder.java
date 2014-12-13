@@ -40,7 +40,7 @@ public class SymbolsTableBuilder implements Visitor {
 		for (ICClass iccls : program.getClasses()) {
 			nodeHandlingQueue.add(iccls);
 			if (!addEntryAndCheckDuplication(programSymbolTable, 
-					new SymbolEntry(iccls.getName(), null, IDSymbolsKinds.CLASS))) {
+					new SymbolEntry(iccls.getName(), iccls.getName(), IDSymbolsKinds.CLASS))) {
 				// TODO Add error handling of duplicated variable
 			}
 			SymbolTable icclsParentSymbolTable;
@@ -212,7 +212,7 @@ public class SymbolsTableBuilder implements Visitor {
 	@Override
 	public Object visit(LocalVariable localVariable) {
 		if (!addEntryAndCheckDuplication(localVariable.getSymbolsTable(), 
-				new SymbolEntry(localVariable.getName(), null, IDSymbolsKinds.VARIABLE))) {
+				new SymbolEntry(localVariable.getName(), localVariable.getType().getName(), IDSymbolsKinds.VARIABLE))) {
 			// TODO Add error handling of duplicated variable
 		}
 		
@@ -231,15 +231,19 @@ public class SymbolsTableBuilder implements Visitor {
 			location.getLocation().setSymbolsTable(location.getSymbolsTable());
 			if (!(Boolean)location.getLocation().accept(this))
 				return false;
-			if (!checkVariableInstance(location.getName(), this.currentClassSymbolTablePoint)) {
+			if (getVariableSymbolEntry(location.getName(), this.currentClassSymbolTablePoint) == null) {
 				// TODO Add error handling for uninitialized variable
 			}
 			
 		}
 		else {
-			if (!checkVariableInstance(location.getName(),  location.getSymbolsTable())) {
+			SymbolEntry varEntry = getVariableSymbolEntry(location.getName(),  location.getSymbolsTable());
+			if (varEntry == null) {
 				// TODO Add error handling for uninitialized variable
 			}
+			if (varEntry.getType() != null) //TODO should be changed to check if this is a class type
+				this.currentClassSymbolTablePoint = findSymbolTable(this.rootSymbolTable, varEntry.getType());
+			
 				
 		}
 		return true;
@@ -263,7 +267,7 @@ public class SymbolsTableBuilder implements Visitor {
 		if (clsSymbolTable == null) {
 			// TODO Add error handling for non-existing class
 		}
-		if(!checkMethodInstance(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable)) {
+		if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable) == null) {
 			// TODO Add error handling for uninitialized variable
 		}
 		
@@ -279,13 +283,15 @@ public class SymbolsTableBuilder implements Visitor {
 	@Override
 	public Object visit(VirtualCall call) {
 		if (call.isExternal()) {
-			call.getLocation().accept(this);
-			if(!checkMethodInstance(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint)) {
+			call.getLocation().setSymbolsTable(call.getSymbolsTable());
+			if (!(Boolean)call.getLocation().accept(this))
+				return false;
+			if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint) == null) {
 				// TODO Add error handling for uninitialized variable
 			}
 		}
 
-		if(!checkMethodInstance(call.getName(), IDSymbolsKinds.STATIC_METHOD, call.getSymbolsTable())) {
+		if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, call.getSymbolsTable()) == null) {
 			// TODO Add error handling for uninitialized variable
 		}
 		
@@ -441,45 +447,45 @@ public class SymbolsTableBuilder implements Visitor {
 		return IDSymbolsKinds.VIRTUAL_METHOD;
 	}
 	
-	private Boolean checkVariableInstance(String name, SymbolTable bottomSymbolTable) {
+	private SymbolEntry getVariableSymbolEntry(String name, SymbolTable bottomSymbolTable) {
 		while (bottomSymbolTable.getId().contains("block#")) {
 			if (bottomSymbolTable.entries.containsKey(name))
-				return true;
+				return bottomSymbolTable.entries.get(name);
 			bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
 		}
 		
 		// Checking method table:
 		if (bottomSymbolTable.entries.containsKey(name))
-			return true;
+			return bottomSymbolTable.entries.get(name);
 		
 		String containigMethodName = bottomSymbolTable.getId();
 		bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
 		
 		if (bottomSymbolTable.entries.get(containigMethodName).getKind() == 
 				IDSymbolsKinds.STATIC_METHOD)
-			return false;
+			return null;
 		
 		// Checking class tables:
 		while (!bottomSymbolTable.getId().equals("globals#")) {
 			SymbolTable clsTable = bottomSymbolTable;
 			if (clsTable.entries.containsKey(name))
 				if (clsTable.entries.get(name).getKind() == IDSymbolsKinds.FIELD)
-					return true;
+					return clsTable.entries.get(name);
 			bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
 		}
 
-		return false;
+		return null;
 	}
 	
-	private Boolean checkMethodInstance(
+	private SymbolEntry getMethodSymbolEntry(
 			String name, IDSymbolsKinds methodKind, SymbolTable bottomClassSymbolTable) {
 		while (bottomClassSymbolTable != null) {
 			if (bottomClassSymbolTable.entries.containsKey(name))
 				if (bottomClassSymbolTable.entries.get(name).getKind() == methodKind)
-					return true;
+					return bottomClassSymbolTable.entries.get(name);
 			bottomClassSymbolTable = bottomClassSymbolTable.parentSymbolTable;
 		}
-		return false;
+		return null;
 	}
 
 }
