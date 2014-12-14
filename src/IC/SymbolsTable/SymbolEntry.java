@@ -24,4 +24,14 @@ public class SymbolEntry {
 	public IDSymbolsKinds getKind() {
 		return kind;
 	}
+	
+	@Override
+	public String toString() {
+		if (kind == IDSymbolsKinds.CLASS)
+			return kind.toString() + ": " + id;
+		if (kind.isMethodKind())
+			return kind.toString() + ": " + id + " {" + type.toString() + "}";
+		
+		return kind.toString() + ": " + type.toString() + " " + id;
+	}
 }

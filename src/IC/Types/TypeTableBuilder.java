@@ -40,8 +40,8 @@ public class TypeTableBuilder implements Visitor {
 
 	private TypeTable builtTypeTable;
 	
-	public TypeTableBuilder() {
-		this.builtTypeTable = new TypeTable();
+	public TypeTableBuilder(String tableId) {
+		this.builtTypeTable = new TypeTable(tableId);
 		builtTypeTable.addPrimitiveTypes();
 	}
 	
@@ -49,7 +49,12 @@ public class TypeTableBuilder implements Visitor {
 		return this.builtTypeTable;
 	}
 	
-	public void findMainMethod(Program program) {
+	public void buildTypeTable(Program program) {
+		findMainMethod(program);
+		visit(program);
+	}
+	
+	private void findMainMethod(Program program) {
 		for (ICClass icClass : program.getClasses()) {
 			for (Method method : icClass.getMethods()) {
 				if (method.getName().equals("main")) {

@@ -1,7 +1,9 @@
 package IC;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+
 
 
 import java_cup.runtime.Symbol;
@@ -9,7 +11,6 @@ import IC.AST.*;
 import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SymbolsTable.*;
-
 import IC.Types.*;
 
 public class Compiler {
@@ -25,14 +26,14 @@ public class Compiler {
 		try {
 			if(args.length == 2 && args[1].substring(0, 2).equals("-L")) { //if library required
 				//parse library file
-				FileReader libFile = new FileReader(args[1].substring(2));
-
-				LibLexer libScanner = new LibLexer(libFile);
+				File libFile = new File(args[1].substring(2));
+				FileReader libFileReader = new  FileReader(libFile);
+				LibLexer libScanner = new LibLexer(libFileReader);
 				LibParser libParser = new LibParser(libScanner);
 
 				Symbol libParseSymbol = libParser.parse();
 				libRoot = (ICClass) libParseSymbol.value;
-				
+				System.out.println("Parsed " + libFile.getName() +" successfully!");
 				
 			// Pretty-print the program to System.out
 			//	PrettyPrinter printer = new PrettyPrinter(args[1].substring(2));
@@ -40,9 +41,10 @@ public class Compiler {
 			}
 
 			//parse IC file
-			FileReader icFile = new FileReader(args[0]);
+			File icFile = new File(args[0]);
+			FileReader icFileReader = new FileReader(icFile);
 
-			Lexer scanner = new Lexer(icFile);
+			Lexer scanner = new Lexer(icFileReader);
 			Parser parser = new Parser(scanner);
 
 			Symbol parseSymbol = parser.parse();
@@ -50,24 +52,26 @@ public class Compiler {
 			if (libRoot != null)
 				ICRoot.getClasses().add(0, libRoot);
 			
-			System.out.println("Parsed " + args[0] +" successfully!");
+			System.out.println("Parsed " + icFile.getName() +" successfully!");
+			System.out.println();
+
+			TypeTableBuilder typeTableBuilder = new TypeTableBuilder(icFile.getName());
+			typeTableBuilder.buildTypeTable(ICRoot);
+			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), icFile.getName());
+			s.buildSymbolTables(ICRoot);
+			s.getSymbolTable().printTable();
+			typeTableBuilder.getBuiltTypeTable().printTable();
 			
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
-			TypeTableBuilder typeTableBuilder = new TypeTableBuilder();
-			typeTableBuilder.findMainMethod(ICRoot);
-			typeTableBuilder.visit(ICRoot);
-			typeTableBuilder.getBuiltTypeTable().printTable();
-			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable());
-			s.buildSymbolTables(ICRoot);
 			
 			//validates that all the return values are correct
 			//ReturnValidator rv = new ReturnValidator();
 			//ICRoot.accept(rv);
 			
 			//validates that all the types are correct
-			TypeValidator tv = new TypeValidator();
-			ICRoot.accept(tv);
+			//TypeValidator tv = new TypeValidator();
+			//ICRoot.accept(tv);
 			
 
 		} catch (FileNotFoundException e) {

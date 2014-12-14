@@ -14,7 +14,7 @@
 
 class Quicksort {
     int[] a;
-	void partition();
+
     int partition(int low, int high) {
     int pivot = a[low];
     int i = low;

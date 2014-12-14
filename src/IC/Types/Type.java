@@ -174,6 +174,7 @@ class ClassType extends Type
 	{
 		super("ClassType");
 		this.classAST = classAST;
+		this.superClassTypeId = null;
 	}
 	
 	public Integer getSuperClassTypeId() {
@@ -188,6 +189,8 @@ class ClassType extends Type
 	
 	@Override
 	public String toString() {
+		if (classAST.hasSuperClass())
+			return classAST.getName() + ", Superclass ID: " + superClassTypeId;
 		return classAST.getName();
 	}
 	

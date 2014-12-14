@@ -16,18 +16,9 @@ import IC.DataTypes;
 
 public class TypeTable {
 
-	public TypeTable() {
-		idCounter = 0;
-		
-		this.uniqueArrayTypes = new HashMap<Type, ArrayType>();
-		this.uniqueClassTypes = new HashMap<String,ClassType>();
-		this.uniqueMethodTypes = new HashMap<String,MethodType>();
-		
-		this.values = new HashMap<Type, Integer>();
-	}
+	private String id;
 	
 	private Map<Type, Integer> values;
-
 	// Maps element types to array types
 	private Map<Type,ArrayType> uniqueArrayTypes;
 	public Map<String,ClassType> uniqueClassTypes;
@@ -40,6 +31,16 @@ public class TypeTable {
 	private Type voidType;
 	
 	private int idCounter;
+	
+	public TypeTable(String tableId) {
+		this.id = tableId;
+		this.idCounter = 0;
+		this.uniqueArrayTypes = new HashMap<Type, ArrayType>();
+		this.uniqueClassTypes = new HashMap<String,ClassType>();
+		this.uniqueMethodTypes = new HashMap<String,MethodType>();
+		
+		this.values = new HashMap<Type, Integer>();
+	}
 	
 	public Type getTypeFromASTTypeNode(IC.AST.Type typeNode) {
 		if (typeNode instanceof PrimitiveType) {
@@ -61,11 +62,12 @@ public class TypeTable {
 	}
 	
 	public void printTable() {
-		System.out.println("\t" + values.get(intType) + ": Primitive type: " + intType.toString());
-		System.out.println("\t" + values.get(boolType) + ": Primitive type: " + boolType.toString());
-		System.out.println("\t" + values.get(nullType) + ": Primitive type: " + nullType.toString());
-		System.out.println("\t" + values.get(stringType) + ": Primitive type: " + stringType.toString());
-		System.out.println("\t" + values.get(voidType) + ": Primitive type: " + voidType.toString());
+		System.out.println("Type Table: " + id);
+		System.out.println("    " + values.get(intType) + ": Primitive type: " + intType.toString());
+		System.out.println("    " + values.get(boolType) + ": Primitive type: " + boolType.toString());
+		System.out.println("    " + values.get(nullType) + ": Primitive type: " + nullType.toString());
+		System.out.println("    " + values.get(stringType) + ": Primitive type: " + stringType.toString());
+		System.out.println("    " + values.get(voidType) + ": Primitive type: " + voidType.toString());
 		
 		List<Map.Entry<String,ClassType>> sorted_uniqueClassTypes =
 	            new ArrayList<Map.Entry<String,ClassType>>( uniqueClassTypes.entrySet() );
@@ -76,7 +78,7 @@ public class TypeTable {
 	            }
 		});
 		for (Map.Entry<String,ClassType> entry : sorted_uniqueClassTypes) 
-			System.out.println("\t" + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
+			System.out.println("    " + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
 		
 		List<Map.Entry<Type,ArrayType>> sorted_uniqueArrayTypes =
 	            new ArrayList<Map.Entry<Type,ArrayType>>( uniqueArrayTypes.entrySet() );
@@ -88,7 +90,7 @@ public class TypeTable {
 		});
 		
 		for (Map.Entry<Type,ArrayType> entry : sorted_uniqueArrayTypes) 
-			System.out.println("\t" + values.get(entry.getValue()) + ": Array type: " + entry.getValue().toString());
+			System.out.println("    " + values.get(entry.getValue()) + ": Array type: " + entry.getValue().toString());
 		
 		List<Map.Entry<String,MethodType>> sorted_uniqueMethodTypes =
 	            new ArrayList<Map.Entry<String,MethodType>>( uniqueMethodTypes.entrySet() );
@@ -100,7 +102,7 @@ public class TypeTable {
 		});
 		
 		for (Map.Entry<String,MethodType> entry : sorted_uniqueMethodTypes) 
-			System.out.println("\t" + values.get(entry.getValue()) + ": Method type: {" + entry.getValue().toString() + "}");
+			System.out.println("    " + values.get(entry.getValue()) + ": Method type: {" + entry.getValue().toString() + "}");
 	}
 	
 	public void addPrimitiveTypes() {
@@ -144,17 +146,18 @@ public class TypeTable {
 		idCounter++;
 	}
 	
-	public void addMethodType(Method mNode) {
-		Type[] params = new Type[mNode.getFormals().size()];
-		List<Formal> formals = mNode.getFormals(); 
-		for (int i = 0; i < params.length; i++)
-			params[i] = getTypeFromASTTypeNode(formals.get(i).getType());
-		MethodType m = new MethodType(params, getTypeFromASTTypeNode(mNode.getType()));
-		if (uniqueMethodTypes.containsKey(m.toString()))
+	public void addMethodType(Method method) {
+		MethodType methodType = generateMethodType(method);
+		if (uniqueMethodTypes.containsKey(methodType.toString()))
 			return;
-		uniqueMethodTypes.put(m.toString(), m);
-		values.put(m, idCounter);
+		uniqueMethodTypes.put(methodType.toString(), methodType);
+		values.put(methodType, idCounter);
 		idCounter++;
+	}
+	
+	public MethodType getMethodType(Method method) {
+		MethodType methodType = generateMethodType(method);
+		return uniqueMethodTypes.get(methodType.toString());
 	}
 	
 	private Type getPrimitiveType(String dataTypeName) {
@@ -189,4 +192,12 @@ public class TypeTable {
 		return (ArrayType)currArrType;
 	}
 	
+	private MethodType generateMethodType(Method method) {
+		Type[] params = new Type[method.getFormals().size()];
+		List<Formal> formals = method.getFormals(); 
+		for (int i = 0; i < params.length; i++)
+			params[i] = getTypeFromASTTypeNode(formals.get(i).getType());
+		MethodType methodType = new MethodType(params, getTypeFromASTTypeNode(method.getType()));
+		return methodType;
+	}
 }

@@ -20,9 +20,9 @@ public class SymbolsTableBuilder implements Visitor {
 	
 	int blockCounter;
 	
-	public SymbolsTableBuilder(TypeTable typeTable) {
+	public SymbolsTableBuilder(TypeTable typeTable, String tableId) {
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
-		this.rootSymbolTable = new SymbolTable("globals#");
+		this.rootSymbolTable = new SymbolTable(tableId, SymbolTableTypes.GLOBAL);
 		this.currentClassSymbolTablePoint = null;
 		
 		this.typeTable = typeTable;
@@ -59,21 +59,21 @@ public class SymbolsTableBuilder implements Visitor {
 			}
 			SymbolTable icclsParentSymbolTable;
 			if (iccls.hasSuperClass()) 
-				icclsParentSymbolTable = findSymbolTable(programSymbolTable, iccls.getSuperClassName());
+				icclsParentSymbolTable = programSymbolTable.findChildSymbolTable(iccls.getSuperClassName());
 			else
 				icclsParentSymbolTable = programSymbolTable;
 			iccls.setSymbolsTable(icclsParentSymbolTable);
 			
-			SymbolTable currentClassSymbolTable = new SymbolTable(iccls.getName());
-			currentClassSymbolTable.parentSymbolTable = icclsParentSymbolTable;
-			icclsParentSymbolTable.children.put(iccls.getName(), currentClassSymbolTable);
+			SymbolTable currentClassSymbolTable = new SymbolTable(iccls.getName(), SymbolTableTypes.CLASS);
+			currentClassSymbolTable.setParentSymbolTable(icclsParentSymbolTable);
+			icclsParentSymbolTable.addTableChild(iccls.getName(), currentClassSymbolTable);
 		}
 		return true;
 	}
 
 	@Override
 	public Object visit(ICClass icClass) {
-		SymbolTable currentClassSymbolTable = findSymbolTable(this.rootSymbolTable, icClass.getName());
+		SymbolTable currentClassSymbolTable = this.rootSymbolTable.findChildSymbolTable(icClass.getName());
 		for (Field field : icClass.getFields()) {
 			nodeHandlingQueue.add(field);
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
@@ -90,15 +90,15 @@ public class SymbolsTableBuilder implements Visitor {
 			nodeHandlingQueue.add(method);
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
 					new SymbolEntry(method.getName(), 
-							typeTable.getTypeFromASTTypeNode(method.getType()), getMethodKind(method)))) {
+							typeTable.getMethodType(method), getMethodKind(method)))) {
 				this.currentSemanticError = new InternalSemanticErrorStruct(
 						method.getLine(), "method " + method.getName() + " is declared more than once");
 				return false;
 			}
 			method.setSymbolsTable(currentClassSymbolTable);
-			SymbolTable currentMethodSymbolTable = new SymbolTable(method.getName());
-			currentMethodSymbolTable.parentSymbolTable = currentClassSymbolTable;
-			currentClassSymbolTable.children.put(method.getName(), currentMethodSymbolTable);
+			SymbolTable currentMethodSymbolTable = new SymbolTable(method.getName(), SymbolTableTypes.METHOD);
+			currentMethodSymbolTable.setParentSymbolTable(currentClassSymbolTable);
+			currentClassSymbolTable.addTableChild(method.getName(), currentMethodSymbolTable);
 		}
 		
 		return true;
@@ -221,8 +221,10 @@ public class SymbolsTableBuilder implements Visitor {
 	@Override
 	public Object visit(StatementsBlock statementsBlock) {
 		this.blockCounter++;
-		SymbolTable blockStmntSymbolTable = new SymbolTable("block#" + blockCounter);
-		blockStmntSymbolTable.parentSymbolTable = statementsBlock.getSymbolsTable();
+		SymbolTable blockStmntSymbolTable = new SymbolTable("block#" + blockCounter, SymbolTableTypes.STATEMENT_BLOCK);
+		statementsBlock.getSymbolsTable().addTableChild(
+				blockStmntSymbolTable.getId(), blockStmntSymbolTable);
+		blockStmntSymbolTable.setParentSymbolTable(statementsBlock.getSymbolsTable());
 		for (Statement stmnt : statementsBlock.getStatements()) {
 			stmnt.setSymbolsTable(blockStmntSymbolTable);
 			if (!(Boolean)stmnt.accept(this))
@@ -271,7 +273,7 @@ public class SymbolsTableBuilder implements Visitor {
 				return false;
 			}
 			if (varEntry.getType().isClassType()) 
-				this.currentClassSymbolTablePoint = findSymbolTable(this.rootSymbolTable, varEntry.getType().toString());
+				this.currentClassSymbolTablePoint = this.rootSymbolTable.findChildSymbolTable(varEntry.getType().toString());
 			
 				
 		}
@@ -292,7 +294,7 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(StaticCall call) {
-		SymbolTable clsSymbolTable = findSymbolTable(this.rootSymbolTable, call.getClassName());
+		SymbolTable clsSymbolTable = this.rootSymbolTable.findChildSymbolTable(call.getClassName());
 		if (clsSymbolTable == null) {
 			this.currentSemanticError = new InternalSemanticErrorStruct(call.getLine(),
 					"the class " + call.getClassName() + " dosen't exist");
@@ -344,9 +346,9 @@ public class SymbolsTableBuilder implements Visitor {
 	public Object visit(This thisExpression) {
 		SymbolTable bottomSymbolTable = thisExpression.getSymbolsTable();
 		while (bottomSymbolTable.getId().contains("block#")) 
-			bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
+			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		
-		bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
+		bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		this.currentClassSymbolTablePoint = bottomSymbolTable;
 				
 		return true;
@@ -354,7 +356,7 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(NewClass newClass) {
-		if (findSymbolTable(this.rootSymbolTable, newClass.getName()) == null) {
+		if (this.rootSymbolTable.findChildSymbolTable(newClass.getName()) == null) {
 			this.currentSemanticError = new InternalSemanticErrorStruct(newClass.getLine(),
 					"the class " + newClass.getName() + " dosen't exist");
 			return false;
@@ -431,8 +433,8 @@ public class SymbolsTableBuilder implements Visitor {
 	}
 	
 	private Object visitMethod(Method method) {
-		SymbolTable currentMethodSymbolTable = findSymbolTable(
-				method.getSymbolsTable(), method.getName());
+		SymbolTable currentMethodSymbolTable = method.getSymbolsTable().findChildSymbolTable(
+				method.getName());
 		for (Formal formal : method.getFormals()) {
 			formal.setSymbolsTable(currentMethodSymbolTable);
 			if (!(Boolean)formal.accept(this))
@@ -448,29 +450,16 @@ public class SymbolsTableBuilder implements Visitor {
 		return true;
 	}
 	
-	private SymbolTable findSymbolTable(SymbolTable root, String id) {
-		for (String tableID : root.children.keySet()) {
-			if (id.equals(tableID))
-				return root.children.get(id);
-			else {
-				SymbolTable result = findSymbolTable(root.children.get(tableID), id);
-				if (result != null)
-					return result;
-			}
-		}
-		return null;
-	}
-	
 	/**
 	 * 
 	 * @return true if and only if there is no variable duplication 
 	 * and the SymbolEntry was added successfully.
 	 */
 	private Boolean addEntryAndCheckDuplication(SymbolTable table, SymbolEntry entry) {
-		if (table.entries.containsKey(entry.getId()))
+		if (table.hasEntry(entry.getId()))
 			return false;
 		
-		table.entries.put(entry.getId(), entry);
+		table.addEntry(entry.getId(), entry);
 		
 		return true;
 	}
@@ -484,29 +473,29 @@ public class SymbolsTableBuilder implements Visitor {
 	
 	private SymbolEntry getVariableSymbolEntry(String name, SymbolTable bottomSymbolTable) {
 		while (bottomSymbolTable.getId().contains("block#")) {
-			if (bottomSymbolTable.entries.containsKey(name))
-				return bottomSymbolTable.entries.get(name);
-			bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
+			if (bottomSymbolTable.hasEntry(name))
+				return bottomSymbolTable.getEntry(name);
+			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		}
 		
 		// Checking method table:
-		if (bottomSymbolTable.entries.containsKey(name))
-			return bottomSymbolTable.entries.get(name);
+		if (bottomSymbolTable.hasEntry(name))
+			return bottomSymbolTable.getEntry(name);
 		
 		String containigMethodName = bottomSymbolTable.getId();
-		bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
+		bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		
-		if (bottomSymbolTable.entries.get(containigMethodName).getKind() == 
+		if (bottomSymbolTable.getEntry(containigMethodName).getKind() == 
 				IDSymbolsKinds.STATIC_METHOD)
 			return null;
 		
 		// Checking class tables:
 		while (!bottomSymbolTable.getId().equals("globals#")) {
 			SymbolTable clsTable = bottomSymbolTable;
-			if (clsTable.entries.containsKey(name))
-				if (clsTable.entries.get(name).getKind() == IDSymbolsKinds.FIELD)
-					return clsTable.entries.get(name);
-			bottomSymbolTable = bottomSymbolTable.parentSymbolTable;
+			if (clsTable.hasEntry(name))
+				if (clsTable.getEntry(name).getKind() == IDSymbolsKinds.FIELD)
+					return clsTable.getEntry(name);
+			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		}
 
 		return null;
@@ -515,10 +504,10 @@ public class SymbolsTableBuilder implements Visitor {
 	private SymbolEntry getMethodSymbolEntry(
 			String name, IDSymbolsKinds methodKind, SymbolTable bottomClassSymbolTable) {
 		while (bottomClassSymbolTable != null) {
-			if (bottomClassSymbolTable.entries.containsKey(name))
-				if (bottomClassSymbolTable.entries.get(name).getKind() == methodKind)
-					return bottomClassSymbolTable.entries.get(name);
-			bottomClassSymbolTable = bottomClassSymbolTable.parentSymbolTable;
+			if (bottomClassSymbolTable.hasEntry(name))
+				if (bottomClassSymbolTable.getEntry(name).getKind() == methodKind)
+					return bottomClassSymbolTable.getEntry(name);
+			bottomClassSymbolTable = bottomClassSymbolTable.getParentSymbolTable();
 		}
 		return null;
 	}
