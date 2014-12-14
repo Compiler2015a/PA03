@@ -14,7 +14,7 @@
 
 class Quicksort {
     int[] a;
-
+	void partition();
     int partition(int low, int high) {
     int pivot = a[low];
     int i = low;
@@ -79,7 +79,7 @@ class Quicksort {
         Library.exit(1);
     }
     Quicksort s = new Quicksort();
-    s.bbb = new int[n];
+    s.a = new int[n];
 
     s.initArray();
     s.printArray();

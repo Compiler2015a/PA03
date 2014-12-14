@@ -2,6 +2,8 @@ package IC.SymbolsTable;
 
 import java.util.LinkedList;
 import java.util.Queue;
+
+import IC.SemanticAnalysis.SemanticError;
 import IC.Types.*;
 import IC.AST.*;
 
@@ -9,9 +11,12 @@ public class SymbolsTableBuilder implements Visitor {
 	
 	private Queue<ASTNode> nodeHandlingQueue;
 	private SymbolTable rootSymbolTable;
+
 	private SymbolTable currentClassSymbolTablePoint;
 	
 	private TypeTable typeTable;
+	
+	private InternalSemanticErrorStruct currentSemanticError;
 	
 	int blockCounter;
 	
@@ -21,21 +26,23 @@ public class SymbolsTableBuilder implements Visitor {
 		this.currentClassSymbolTablePoint = null;
 		
 		this.typeTable = typeTable;
+		
+		this.currentSemanticError = null;
 	}
 
-	public SymbolTable buildSymbolTables(Program root) {
+	public SymbolTable getSymbolTable() {
+		return rootSymbolTable;
+	}
+	
+	public void buildSymbolTables(Program root) throws SemanticError {
 		nodeHandlingQueue.add(root);
 		ASTNode currentNode;
 		this.blockCounter = 0;
 		while (!nodeHandlingQueue.isEmpty()) {
 			currentNode = nodeHandlingQueue.poll();
-			if (!(Boolean)currentNode.accept(this)) {
-				System.out.println("error"); // TODO for checks. should be removed
-				return null;
-			}
+			if (!(Boolean)currentNode.accept(this)) 
+				throw new SemanticError(currentSemanticError.getLine(), currentSemanticError.getMsg());
 		}
-		
-		return null;
 	}
 	
 	@Override
@@ -46,15 +53,13 @@ public class SymbolsTableBuilder implements Visitor {
 			if (!addEntryAndCheckDuplication(programSymbolTable, 
 					new SymbolEntry(iccls.getName(), typeTable.uniqueClassTypes.get(iccls.getName()), 
 							IDSymbolsKinds.CLASS))) {
-				// TODO Add error handling of duplicated variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(
+						iccls.getLine(), "class " + iccls.getName() + " is declared more than once");
+				return false;
 			}
 			SymbolTable icclsParentSymbolTable;
-			if (iccls.hasSuperClass()) {
+			if (iccls.hasSuperClass()) 
 				icclsParentSymbolTable = findSymbolTable(programSymbolTable, iccls.getSuperClassName());
-				if (icclsParentSymbolTable == null) { //class name was nor found or not yet initialized
-					// TODO Add error handling of extending a non existing class
-				}
-			}
 			else
 				icclsParentSymbolTable = programSymbolTable;
 			iccls.setSymbolsTable(icclsParentSymbolTable);
@@ -74,7 +79,9 @@ public class SymbolsTableBuilder implements Visitor {
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
 					new SymbolEntry(field.getName(), 
 							typeTable.getTypeFromASTTypeNode(field.getType()), IDSymbolsKinds.FIELD))) {
-				// TODO Add error handling of duplicated variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(
+						field.getLine(), "field " + field.getName() + " is declared more than once");
+				return false;
 			}
 			field.setSymbolsTable(currentClassSymbolTable);
 		}
@@ -84,7 +91,9 @@ public class SymbolsTableBuilder implements Visitor {
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
 					new SymbolEntry(method.getName(), 
 							typeTable.getTypeFromASTTypeNode(method.getType()), getMethodKind(method)))) {
-				// TODO Add error handling of duplicated variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(
+						method.getLine(), "method " + method.getName() + " is declared more than once");
+				return false;
 			}
 			method.setSymbolsTable(currentClassSymbolTable);
 			SymbolTable currentMethodSymbolTable = new SymbolTable(method.getName());
@@ -119,7 +128,9 @@ public class SymbolsTableBuilder implements Visitor {
 	public Object visit(Formal formal) {
 		if (!addEntryAndCheckDuplication(formal.getSymbolsTable(), 
 				new SymbolEntry(formal.getName(), typeTable.getTypeFromASTTypeNode(formal.getType()), IDSymbolsKinds.FORMAL))) {
-			// TODO Add error handling of duplicated variable
+			this.currentSemanticError = new InternalSemanticErrorStruct(
+					formal.getLine(), "formal " + formal.getName() + " is declared more than once");
+			return false;
 		}
 		
 		return true;
@@ -225,7 +236,9 @@ public class SymbolsTableBuilder implements Visitor {
 	public Object visit(LocalVariable localVariable) {
 		if (!addEntryAndCheckDuplication(localVariable.getSymbolsTable(), 
 				new SymbolEntry(localVariable.getName(), typeTable.getTypeFromASTTypeNode(localVariable.getType()), IDSymbolsKinds.VARIABLE))) {
-			// TODO Add error handling of duplicated variable
+			this.currentSemanticError = new InternalSemanticErrorStruct(localVariable.getLine(),
+					"variable " + localVariable.getName() + " is initialized more than once");
+			return false;
 		}
 		
 		if (localVariable.hasInitValue()) {
@@ -244,14 +257,18 @@ public class SymbolsTableBuilder implements Visitor {
 			if (!(Boolean)location.getLocation().accept(this))
 				return false;
 			if (getVariableSymbolEntry(location.getName(), this.currentClassSymbolTablePoint) == null) {
-				// TODO Add error handling for uninitialized variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(location.getLine(),
+						"variable " + location.getName() + " is not initialized");
+				return false;
 			}
 			
 		}
 		else {
 			SymbolEntry varEntry = getVariableSymbolEntry(location.getName(),  location.getSymbolsTable());
 			if (varEntry == null) {
-				// TODO Add error handling for uninitialized variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(location.getLine(),
+						"variable " + location.getName() + " is not initialized");
+				return false;
 			}
 			if (varEntry.getType().isClassType()) 
 				this.currentClassSymbolTablePoint = findSymbolTable(this.rootSymbolTable, varEntry.getType().toString());
@@ -277,10 +294,14 @@ public class SymbolsTableBuilder implements Visitor {
 	public Object visit(StaticCall call) {
 		SymbolTable clsSymbolTable = findSymbolTable(this.rootSymbolTable, call.getClassName());
 		if (clsSymbolTable == null) {
-			// TODO Add error handling for non-existing class
+			this.currentSemanticError = new InternalSemanticErrorStruct(call.getLine(),
+					"the class " + call.getClassName() + " dosen't exist");
+			return false;
 		}
 		if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable) == null) {
-			// TODO Add error handling for uninitialized variable
+			this.currentSemanticError = new InternalSemanticErrorStruct(call.getLine(),
+					"the method " + call.getName() + " dosen't exist");
+			return false;
 		}
 		
 		for (Expression arg : call.getArguments()) {
@@ -299,12 +320,15 @@ public class SymbolsTableBuilder implements Visitor {
 			if (!(Boolean)call.getLocation().accept(this))
 				return false;
 			if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint) == null) {
-				// TODO Add error handling for uninitialized variable
+				this.currentSemanticError = new InternalSemanticErrorStruct(call.getLine(),
+						"the method " + call.getName() + " dosen't exist");
+				return false;
 			}
 		}
-
-		if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, call.getSymbolsTable()) == null) {
-			// TODO Add error handling for uninitialized variable
+		else if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, call.getSymbolsTable()) == null) {
+			this.currentSemanticError = new InternalSemanticErrorStruct(call.getLine(),
+					"the method " + call.getName() + " dosen't exist");
+			return false;
 		}
 		
 		for (Expression arg : call.getArguments()) {
@@ -331,7 +355,9 @@ public class SymbolsTableBuilder implements Visitor {
 	@Override
 	public Object visit(NewClass newClass) {
 		if (findSymbolTable(this.rootSymbolTable, newClass.getName()) == null) {
-			// TODO Add error handling for non-existing class
+			this.currentSemanticError = new InternalSemanticErrorStruct(newClass.getLine(),
+					"the class " + newClass.getName() + " dosen't exist");
+			return false;
 		}
 		
 		return true;
@@ -450,10 +476,10 @@ public class SymbolsTableBuilder implements Visitor {
 	}
 	
 	private IDSymbolsKinds getMethodKind(Method method) {
-		if (method instanceof StaticMethod)
-			return IDSymbolsKinds.STATIC_METHOD;
+		if (method instanceof VirtualMethod)
+			return IDSymbolsKinds.VIRTUAL_METHOD;
 		
-		return IDSymbolsKinds.VIRTUAL_METHOD;
+		return IDSymbolsKinds.STATIC_METHOD;
 	}
 	
 	private SymbolEntry getVariableSymbolEntry(String name, SymbolTable bottomSymbolTable) {
@@ -496,5 +522,23 @@ public class SymbolsTableBuilder implements Visitor {
 		}
 		return null;
 	}
-
+	
+	private class InternalSemanticErrorStruct {
+		
+		private int line;
+		private String msg;
+		
+		public InternalSemanticErrorStruct(int line, String msg) {
+			this.line = line;
+			this.msg  = msg;
+		}
+		
+		public int getLine() {
+			return line;
+		}
+		
+		public String getMsg() {
+			return msg;
+		}
+	}
 }
