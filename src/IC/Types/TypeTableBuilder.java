@@ -1,44 +1,13 @@
 package IC.Types;
 
-import IC.AST.ArrayLocation;
-import IC.AST.Assignment;
-import IC.AST.Break;
-import IC.AST.CallStatement;
-import IC.AST.Continue;
-import IC.AST.ExpressionBlock;
-import IC.AST.Field;
-import IC.AST.Formal;
-import IC.AST.ICClass;
-import IC.AST.If;
-import IC.AST.Length;
-import IC.AST.LibraryMethod;
-import IC.AST.Literal;
-import IC.AST.LocalVariable;
-import IC.AST.LogicalBinaryOp;
-import IC.AST.LogicalUnaryOp;
-import IC.AST.MathBinaryOp;
-import IC.AST.MathUnaryOp;
-import IC.AST.Method;
-import IC.AST.NewArray;
-import IC.AST.NewClass;
-import IC.AST.PrimitiveType;
-import IC.AST.Program;
-import IC.AST.Return;
-import IC.AST.Statement;
-import IC.AST.StatementsBlock;
-import IC.AST.StaticCall;
-import IC.AST.StaticMethod;
-import IC.AST.This;
-import IC.AST.UserType;
-import IC.AST.VariableLocation;
-import IC.AST.VirtualCall;
-import IC.AST.VirtualMethod;
-import IC.AST.Visitor;
-import IC.AST.While;
+import IC.AST.*;
+import IC.SemanticAnalysis.SemanticError;
+import IC.SemanticAnalysis.SemanticErrorThrower;
 
 public class TypeTableBuilder implements Visitor {
 
 	private TypeTable builtTypeTable;
+	private SemanticErrorThrower semanticErrorThrower;
 	
 	public TypeTableBuilder(String tableId) {
 		this.builtTypeTable = new TypeTable(tableId);
@@ -49,12 +18,14 @@ public class TypeTableBuilder implements Visitor {
 		return this.builtTypeTable;
 	}
 	
-	public void buildTypeTable(Program program) {
-		findMainMethod(program);
-		visit(program);
+	public void buildTypeTable(Program program) throws SemanticError {
+		if (!findMainMethod(program))
+			semanticErrorThrower.execute();
+		if (!(Boolean)visit(program))
+			semanticErrorThrower.execute();
 	}
 	
-	private void findMainMethod(Program program) {
+	private Boolean findMainMethod(Program program) {
 		for (ICClass icClass : program.getClasses()) {
 			for (Method method : icClass.getMethods()) {
 				if (method.getName().equals("main")) {
@@ -63,28 +34,41 @@ public class TypeTableBuilder implements Visitor {
 					method.getType().accept(this);
 					
 					builtTypeTable.addMethodType(method);
-					return;
+					return true;
 				}
 			}
 		}
+		semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is missing");
+		// TODO:
+		/*
+		 * 1) Replace line 1 in the last line (according to the forum)
+		 * 2) Check in the specification if we should also throw an error if there are more
+		 * 	  than one Main method.
+		 */
+		return false;
 	}
 	
 	@Override
 	public Object visit(Program program) {
 		for (ICClass icClass : program.getClasses())
-			icClass.accept(this);
-		return null;
+			if (!(Boolean)icClass.accept(this))
+				return false;
+		return true;
 	}
 
 	@Override
 	public Object visit(ICClass icClass) {
-		builtTypeTable.addClassType(icClass);
+		if (!builtTypeTable.addClassType(icClass)) {
+			semanticErrorThrower = new SemanticErrorThrower(icClass.getLine(),
+					"extended class " + icClass.getSuperClassName() + " was not declared");
+			return false;
+		}
 		for (Field field : icClass.getFields())
 			field.accept(this);
 		for (Method method : icClass.getMethods())
 			method.accept(this);
 		
-		return null;
+		return true;
 	}
 
 	@Override

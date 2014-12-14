@@ -13,3 +13,4 @@ public class SemanticError extends IOException {
 		super("semantic error at line " + line + ": " + msg);
 	}
 }
+

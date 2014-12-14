@@ -130,20 +130,27 @@ public class TypeTable {
 			currArrType = addAndReturnArraySingleType(currArrType);
 	}
 	
-	public void addClassType(ICClass classAST) {
+	/**
+	 * 
+	 * @param classAST
+	 * @return false if and only if the class is extending a class which dosen't exist
+	 */
+	public Boolean addClassType(ICClass classAST) {
 		if (uniqueClassTypes.containsKey(classAST))
-			return;
+			return true;
 		ClassType clst = new ClassType(classAST);
-		uniqueClassTypes.put(classAST.getName(), clst);
 		if (classAST.hasSuperClass()) {
-			if (!uniqueClassTypes.containsKey(classAST.getSuperClassName())) {
-				// TODO Add error handling of extending a non existing class
-			}
+			if (!uniqueClassTypes.containsKey(classAST.getSuperClassName()))
+				return false;
+
 			clst.setSuperClassTypeId(values.get(
 					uniqueClassTypes.get(classAST.getSuperClassName())));
 		}
+		uniqueClassTypes.put(classAST.getName(), clst);
 		values.put(clst, idCounter);
 		idCounter++;
+		
+		return true;
 	}
 	
 	public void addMethodType(Method method) {

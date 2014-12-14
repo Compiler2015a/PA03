@@ -70,8 +70,8 @@ public class Compiler {
 			//ICRoot.accept(rv);
 			
 			//validates that all the types are correct
-			//TypeValidator tv = new TypeValidator();
-			//ICRoot.accept(tv);
+			TypeValidator tv = new TypeValidator();
+			ICRoot.accept(tv);
 			
 
 		} catch (FileNotFoundException e) {
