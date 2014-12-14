@@ -32,4 +32,6 @@ public abstract class Type extends ASTNode {
 	public void incrementDimension() {
 		++dimension;
 	}
+	
+	public abstract boolean nullAssignable();
 }

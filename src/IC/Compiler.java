@@ -65,12 +65,18 @@ public class Compiler {
 			//ReturnValidator rv = new ReturnValidator();
 			//ICRoot.accept(rv);
 			
+			//validates that all the types are correct
+			TypeValidator tv = new TypeValidator();
+			ICRoot.accept(tv);
+			
 
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
 		} catch (LexicalError e) {
 			System.out.println(e.getMessage());
 		} catch (SemanticError e) {
+			System.out.println(e.getMessage());
+		} catch (TypeException e) {
 			System.out.println(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();

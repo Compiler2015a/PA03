@@ -10,6 +10,8 @@ public abstract class Type {
 		this.name=name;
 	}
 	
+	public abstract boolean isNullAssignable();
+	
 	public boolean subTypeOf(Type t)
 	{
 		if(this.name.compareTo(t.name)==0)
@@ -20,7 +22,6 @@ public abstract class Type {
 	public boolean isClassType() {
 		return (this instanceof ClassType);
 	}
-	
 }
 class IntType extends Type 
 {
@@ -32,6 +33,11 @@ class IntType extends Type
 	@Override
 	public String toString() {
 		return "int";
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return false;
 	}
 }
 
@@ -46,6 +52,12 @@ class BoolType extends Type
 	public String toString() {
 		return "boolean";
 	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return false;
+	}
+	
 }
 
 class NullType extends Type 
@@ -58,6 +70,11 @@ class NullType extends Type
 	@Override
 	public String toString() {
 		return "null";
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return true;
 	}
 }
 
@@ -72,6 +89,11 @@ class StringType extends Type
 	public String toString() {
 		return "string";
 	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return true;
+	}
 }
 
 class VoidType extends Type 
@@ -84,6 +106,11 @@ class VoidType extends Type
 	@Override
 	public String toString() {
 		return "void";
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return false;
 	}
 }
 
@@ -99,6 +126,11 @@ class ArrayType extends Type
 	@Override
 	public String toString() {
 		return elemType.toString() + "[]";
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return true;
 	}
 }
 
@@ -123,6 +155,12 @@ class MethodType extends Type
 				paramTypesStr += ", " + paramTypes[i].toString();
 		}
 		return paramTypesStr + " -> " + returnType.toString();
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		System.out.println("Type file = "+ returnType.name);
+		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
 	}
 }
 
@@ -151,5 +189,10 @@ class ClassType extends Type
 	@Override
 	public String toString() {
 		return classAST.getName();
+	}
+	
+	@Override
+	public boolean isNullAssignable() {
+		return true;
 	}
 }

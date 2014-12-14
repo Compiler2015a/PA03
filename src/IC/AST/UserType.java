@@ -30,4 +30,8 @@ public class UserType extends Type {
 		return name;
 	}
 
+	@Override
+	public boolean nullAssignable() {
+		return true;
+	}
 }

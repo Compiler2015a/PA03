@@ -188,5 +188,5 @@ public class TypeTable {
 		
 		return (ArrayType)currArrType;
 	}
+	
 }
-
