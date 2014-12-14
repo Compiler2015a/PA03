@@ -157,6 +157,7 @@ public class SymbolTable {
 				  SymbolTable clsSymbolTable = sorted_children.get(i);
 				  sorted_children.remove(clsSymbolTable);
 				  sorted_children.add(clsSymbolTable);
+				  classesCounter++;
 			  }
 		  }
 	  }
