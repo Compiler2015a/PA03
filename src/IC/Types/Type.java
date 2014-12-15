@@ -5,7 +5,7 @@ import IC.AST.ICClass;
 public abstract class Type {
 	protected String name;
 	
-	public Type(String name)
+	public Type(String name) 
 	{
 		this.name=name;
 	}
@@ -21,6 +21,10 @@ public abstract class Type {
 	
 	public boolean isClassType() {
 		return (this instanceof ClassType);
+	}
+	
+	public boolean isArrayType() {
+		return (this instanceof ArrayType);
 	}
 	
 	public String getName()
