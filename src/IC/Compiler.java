@@ -59,12 +59,12 @@ public class Compiler {
 			typeTableBuilder.buildTypeTable(ICRoot);
 			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), icFile.getName());
 			s.buildSymbolTables(ICRoot);
-			//s.getSymbolTable().printTable();
-			//typeTableBuilder.getBuiltTypeTable().printTable();
+			s.getSymbolTable().printTable();
+			typeTableBuilder.getBuiltTypeTable().printTable();
 			
 			//Pretty-print the program to System.out
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
-			System.out.println(printer.visit(ICRoot));
+		//	System.out.println(printer.visit(ICRoot));
 			//validates that all the return values are correct
 			//ReturnValidator rv = new ReturnValidator();
 			//ICRoot.accept(rv);

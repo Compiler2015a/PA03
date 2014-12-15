@@ -167,30 +167,28 @@ class MethodType extends Type
 class ClassType extends Type 
 {   
 	ICClass classAST;
-	Integer superClassTypeId;
+	String superClass;
 
 
 	public ClassType(ICClass classAST)
 	{
 		super("ClassType");
 		this.classAST = classAST;
-		this.superClassTypeId = null;
+		this.superClass = null;
+		if (classAST.hasSuperClass())
+			this.superClass = classAST.getSuperClassName();
 	}
 	
-	public Integer getSuperClassTypeId() {
-		if (!classAST.hasSuperClass())
-			return null;
-		return superClassTypeId;
+	public String getSuperClassName() {
+		return superClass;
 	}
 
-	public void setSuperClassTypeId(Integer superClassTypeId) {
-		this.superClassTypeId = superClassTypeId;
+	public Boolean hasSuperClass() {
+		return (superClass != null);
 	}
 	
 	@Override
 	public String toString() {
-		if (classAST.hasSuperClass())
-			return classAST.getName() + ", Superclass ID: " + superClassTypeId;
 		return classAST.getName();
 	}
 	
