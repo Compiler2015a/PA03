@@ -42,6 +42,10 @@ public class TypeValidator implements Visitor{
 	
 	public Object visitMethod(Method method) {
 		
+		for (Formal formal : method.getFormals()) {
+			formal.accept(this);
+				
+		}
 		for (Statement statement : method.getStatements()) {
 			statement.accept(this);
 		}
@@ -127,10 +131,17 @@ public class TypeValidator implements Visitor{
 				scope.getType() != IDSymbolsKinds.VIRTUAL_METHOD) {
 			scope = scope.getParentSymbolTable();
 		}
-		// get the method symbol from the class scope, and infer the type
-		IDSymbolsKinds typeExpected = scope.getType();
-		
-		if (typeInFact.equals(typeExpected) == false)
+		//get the return type of the match method=scope
+		String typeExpected="void";
+		for(SymbolEntry x: scope.getParentSymbolTable().getEntries().values())
+		{
+			if(x.getId().equals(scope.getId()))
+			{
+				typeExpected=x.getType().toString();
+				typeExpected=typeExpected.substring(x.getType().toString().indexOf("->")+3);
+			}
+		}
+		if (typeInFact.toString().equals(typeExpected) == false)
 			throw new TypeException(String.format(
 					"Return statement is not of type %s", typeExpected), returnStatement.getLine());
 			

@@ -52,7 +52,12 @@ public class SymbolTable {
 			return true;
 			
 		}
-
+	  
+	  public Map<String,SymbolEntry> getEntries()
+	  {
+		  return this.entries;
+	  }
+	  
 	  public SymbolTable getClassScope(String className) {
 			if (id.equals(className)) 
 			{
