@@ -70,7 +70,7 @@ public class Compiler {
 			//ICRoot.accept(rv);
 			
 			//validates that all the types are correct
-			TyprChecker2 tv = new TyprChecker2();
+			TypeValidator tv = new TypeValidator();
 			ICRoot.accept(tv);
 			
 

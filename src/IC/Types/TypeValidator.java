@@ -132,12 +132,9 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(If ifStatement) {
-		ifStatement.getCondition().setSymbolsTable(ifStatement.getSymbolsTable());
-		IC.AST.Type typeCondition = (IC.AST.Type)ifStatement.getCondition().accept(this);
-		
-		if (typeCondition == null || typeCondition.getName().equals("boolean") == false)
+		Type typeCondition = (Type)ifStatement.getCondition().accept(this);
+		if (typeCondition == null || typeCondition.getName().equals("BoolType") == false)
 			throw new TypeException("Non boolean condition for if statement", ifStatement.getLine());
-		ifStatement.getOperation().setSymbolsTable(ifStatement.getSymbolsTable());
 		ifStatement.getOperation().accept(this);
 		if (ifStatement.hasElse())
 		{
@@ -305,7 +302,6 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(This thisExpression) {
-		
 		SymbolTable scope = thisExpression.getSymbolsTable();
 		if (scope.getType() == IDSymbolsKinds.STATIC_METHOD)
 			throw new TypeException("Use of 'this' expression inside static method is not allowed", thisExpression.getLine());
@@ -331,29 +327,27 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(NewArray newArray) {
-	
-		IC.AST.Type typeSize = (IC.AST.Type)newArray.getSize().accept(this);
-		IC.AST.Type typeArray = (IC.AST.Type)newArray.getType().accept(this);
-		if (typeSize == null || typeSize.getName().equals("int") == false)
+	System.out.println("blabla\n");
+		Type typeSize = (Type)newArray.getSize().accept(this);
+		Type typeArray = (Type)newArray.getType().accept(this);
+		if (typeSize == null || typeSize.getName().equals("IntType") == false)
 			throw new TypeException("Array size must be an integer", newArray.getLine());
-		IC.AST.Type typeReturned = typeArray.clone();
-		typeReturned.incrementDimension();
+		Type typeReturned = typeArray.clone();
 		return typeReturned;
 	}
 
 	@Override
 	public Object visit(Length length) {
 	
-		return new PrimitiveType(length.getLine(), DataTypes.INT);
+		return new IntType();
 	}
 
 	@Override
 	public Object visit(Literal literal) {
-		
 		if(literal.getType().toString().equals("INTEGER"))
 			return new IntType();//(literal.getLine(), DataTypes.INT);	
 		if(literal.getType().toString().equals("STRING"))
-			return new PrimitiveType(literal.getLine(), DataTypes.STRING);	
+			return new StringType();
 		return null;
 	}
 
@@ -365,8 +359,8 @@ public class TypeValidator implements Visitor{
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
 		case UMINUS:
-			if (type.getName().equals("int"))
-				return new PrimitiveType(0, DataTypes.INT);
+			if (type.getName().equals("IntType"))
+				return new IntType();
 			break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
@@ -374,20 +368,17 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(LogicalBinaryOp binaryOp) {
-		
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
 				if (typeFirst == null || typeSecond == null)
 			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
-		
-		
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
 		case LAND:
 		case LOR:
-			if (typeFirst.getName().equals("boolean") && typeSecond.getName().equals("boolean")) 
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+			if (typeFirst.getName().equals("BoolType") && typeSecond.getName().equals("BoolType")) 
+				return new BoolType();
 			onWhat = "non-boolean";
 			opType = "logical";
 			break;
@@ -395,19 +386,19 @@ public class TypeValidator implements Visitor{
 		case LTE:
 		case GT:
 		case GTE:
-			if (typeFirst.getName().equals("int") && typeSecond.getName().equals("int")) 
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+			if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+				return new BoolType();
 			onWhat = "non-integer";
 			opType = "logical";
 			break;
 		case EQUAL:
 		case NEQUAL:
-			if (typeFirst.equals(typeSecond))
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+			if (typeFirst.getName().equals(typeSecond.getName()))
+				return new BoolType();
 			if (typeFirst.nullComparable() && typeSecond.getName().equals("void"))
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+				return new BoolType();
 			if (typeFirst.getName().equals("void") && typeSecond.nullComparable()) 
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+				return new BoolType();
 			onWhat = "not-fitting";
 			opType = "logical";
 			break;
@@ -423,13 +414,13 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(MathUnaryOp unaryOp) {
 	
-		IC.AST.Type type = (IC.AST.Type)unaryOp.getOperand().accept(this);
+		Type type = (Type)unaryOp.getOperand().accept(this);
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
 		case LNEG:
-			if (type.getName().equals("boolean"))
-				return new PrimitiveType(0, DataTypes.BOOLEAN);
+			if (type.getName().equals("BoolType"))
+				return new BoolType();
 			break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
@@ -438,6 +429,7 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
 		// TODO Auto-generated method stub
+		System.out.println("$112\n");
 		return null;
 	}
 
