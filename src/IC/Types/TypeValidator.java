@@ -236,8 +236,17 @@ public class TypeValidator implements Visitor
 
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+	
+		IC.AST.Type type = (IC.AST.Type)unaryOp.getOperand().accept(this);
+		if (type == null)
+			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
+		switch(unaryOp.getOperator()) {
+		case UMINUS:
+			if (type.getName().equals("int"))
+				return new PrimitiveType(0, DataTypes.INT);
+			break;
+		}
+		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
 	}
 
 	@Override

@@ -10,8 +10,8 @@ public abstract class Type {
 		this.name=name;
 	}
 	
-	public abstract boolean isNullAssignable();
-	public abstract boolean isNullComparable();
+	public abstract boolean nullAssignable();
+	public abstract boolean nullComparable();
 	public boolean subTypeOf(Type t)
 	{
 		if(this.name.compareTo(t.name)==0)
@@ -21,6 +21,11 @@ public abstract class Type {
 	
 	public boolean isClassType() {
 		return (this instanceof ClassType);
+	}
+	
+	public String getName()
+	{
+		return this.name;
 	}
 }
 class IntType extends Type 
@@ -36,12 +41,12 @@ class IntType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return false;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -60,12 +65,12 @@ class BoolType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return false;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -85,12 +90,12 @@ class NullType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return true;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		return true;
 	}
 }
@@ -108,12 +113,12 @@ class StringType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return true;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		return true;
 	}
 }
@@ -131,12 +136,12 @@ class VoidType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return false;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		return true;
 	}
 }
@@ -156,12 +161,12 @@ class ArrayType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return true;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		// TODO Auto-generated method stub
 		return true;
 	}
@@ -191,13 +196,13 @@ class MethodType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		System.out.println("Type file = "+ returnType.name);
 		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
 	}
 }
@@ -231,12 +236,12 @@ class ClassType extends Type
 	}
 	
 	@Override
-	public boolean isNullAssignable() {
+	public boolean nullAssignable() {
 		return true;
 	}
 
 	@Override
-	public boolean isNullComparable() {
+	public boolean nullComparable() {
 		return true;
 	}
 }
