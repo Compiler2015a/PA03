@@ -3,6 +3,7 @@ package IC.SymbolsTable;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import IC.DataTypes;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.Types.*;
@@ -52,12 +53,13 @@ public class SymbolsTableBuilder implements Visitor {
 		for (ICClass iccls : program.getClasses()) {
 			nodeHandlingQueue.add(iccls);
 			if (!addEntryAndCheckDuplication(programSymbolTable, 
-					new SymbolEntry(iccls.getName(), typeTable.uniqueClassTypes.get(iccls.getName()), 
+					new SymbolEntry(iccls.getName(), typeTable.getClassType(iccls.getName()), 
 							IDSymbolsKinds.CLASS))) {
 				this.semanticErrorThrower = new SemanticErrorThrower(
 						iccls.getLine(), "class " + iccls.getName() + " is declared more than once");
 				return false;
 			}
+			iccls.setEntryType(typeTable.getClassType(iccls.getName()));
 			SymbolTable icclsParentSymbolTable;
 			if (iccls.hasSuperClass()) 
 				icclsParentSymbolTable = programSymbolTable.findChildSymbolTable(iccls.getSuperClassName());
@@ -77,25 +79,27 @@ public class SymbolsTableBuilder implements Visitor {
 		SymbolTable currentClassSymbolTable = this.rootSymbolTable.findChildSymbolTable(icClass.getName());
 		for (Field field : icClass.getFields()) {
 			nodeHandlingQueue.add(field);
+			IC.Types.Type fieldType = typeTable.getTypeFromASTTypeNode(field.getType());
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
-					new SymbolEntry(field.getName(), 
-							typeTable.getTypeFromASTTypeNode(field.getType()), IDSymbolsKinds.FIELD))) {
+					new SymbolEntry(field.getName(), fieldType, IDSymbolsKinds.FIELD))) {
 				this.semanticErrorThrower = new SemanticErrorThrower(
 						field.getLine(), "field " + field.getName() + " is declared more than once");
 				return false;
 			}
+			field.setEntryType(fieldType);
 			field.setSymbolsTable(currentClassSymbolTable);
 		}
 		
 		for (Method method : icClass.getMethods()) {
 			nodeHandlingQueue.add(method);
+			IC.Types.Type methodType = typeTable.getMethodType(method);
 			if (!addEntryAndCheckDuplication(currentClassSymbolTable, 
-					new SymbolEntry(method.getName(), 
-							typeTable.getMethodType(method), getMethodKind(method)))) {
+					new SymbolEntry(method.getName(), methodType, getMethodKind(method)))) {
 				this.semanticErrorThrower = new SemanticErrorThrower(
 						method.getLine(), "method " + method.getName() + " is declared more than once");
 				return false;
 			}
+			method.setEntryType(methodType);
 			method.setSymbolsTable(currentClassSymbolTable);
 			SymbolTable currentMethodSymbolTable = new SymbolTable(method.getName(), SymbolTableTypes.METHOD);
 			currentMethodSymbolTable.setParentSymbolTable(currentClassSymbolTable);
@@ -127,13 +131,14 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(Formal formal) {
+		IC.Types.Type formalType = typeTable.getTypeFromASTTypeNode(formal.getType());
 		if (!addEntryAndCheckDuplication(formal.getSymbolsTable(), 
-				new SymbolEntry(formal.getName(), typeTable.getTypeFromASTTypeNode(formal.getType()), IDSymbolsKinds.FORMAL))) {
+				new SymbolEntry(formal.getName(), formalType, IDSymbolsKinds.FORMAL))) {
 			this.semanticErrorThrower = new SemanticErrorThrower(
 					formal.getLine(), "formal " + formal.getName() + " is declared more than once");
 			return false;
 		}
-		
+		formal.setEntryType(formalType);
 		return true;
 	}
 
@@ -237,12 +242,16 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
+		IC.Types.Type localVarType = typeTable.getTypeFromASTTypeNode(localVariable.getType());
 		if (!addEntryAndCheckDuplication(localVariable.getSymbolsTable(), 
-				new SymbolEntry(localVariable.getName(), typeTable.getTypeFromASTTypeNode(localVariable.getType()), IDSymbolsKinds.VARIABLE))) {
+				new SymbolEntry(localVariable.getName(), localVarType, IDSymbolsKinds.VARIABLE))) {
 			this.semanticErrorThrower = new SemanticErrorThrower(localVariable.getLine(),
 					"variable " + localVariable.getName() + " is initialized more than once");
+			
 			return false;
 		}
+		
+		localVariable.setEntryType(localVarType);
 		
 		if (localVariable.hasInitValue()) {
 			localVariable.getInitValue().setSymbolsTable(localVariable.getSymbolsTable());
@@ -255,29 +264,29 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(VariableLocation location) {
+		SymbolEntry varEntry;
 		if (location.isExternal()) {
 			location.getLocation().setSymbolsTable(location.getSymbolsTable());
 			if (!(Boolean)location.getLocation().accept(this))
 				return false;
-			if (getVariableSymbolEntry(location.getName(), this.currentClassSymbolTablePoint) == null) {
+			varEntry = getVariableSymbolEntry(location.getName(), this.currentClassSymbolTablePoint);
+			if (varEntry == null) {
 				this.semanticErrorThrower = new SemanticErrorThrower(location.getLine(),
 						"variable " + location.getName() + " is not initialized");
 				return false;
 			}
-			
 		}
 		else {
-			SymbolEntry varEntry = getVariableSymbolEntry(location.getName(),  location.getSymbolsTable());
+			varEntry = getVariableSymbolEntry(location.getName(),  location.getSymbolsTable());
 			if (varEntry == null) {
 				this.semanticErrorThrower = new SemanticErrorThrower(location.getLine(),
 						"variable " + location.getName() + " is not initialized");
 				return false;
 			}
 			if (varEntry.getType().isClassType()) 
-				this.currentClassSymbolTablePoint = this.rootSymbolTable.findChildSymbolTable(varEntry.getType().toString());
-			
-				
+				this.currentClassSymbolTablePoint = this.rootSymbolTable.findChildSymbolTable(varEntry.getType().toString());	
 		}
+		location.setEntryType(varEntry.getType());;
 		return true;
 	}
 
@@ -286,6 +295,9 @@ public class SymbolsTableBuilder implements Visitor {
 		location.getArray().setSymbolsTable(location.getSymbolsTable());
 		if (!(Boolean)location.getArray().accept(this))
 			return false;
+		
+		location.setEntryType(location.getArray().getEntryType());
+
 		location.getIndex().setSymbolsTable(location.getSymbolsTable());
 		if (!(Boolean)location.getIndex().accept(this))
 			return false;
@@ -301,11 +313,13 @@ public class SymbolsTableBuilder implements Visitor {
 					"the class " + call.getClassName() + " dosen't exist");
 			return false;
 		}
-		if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable) == null) {
+		SymbolEntry methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable);
+		if(methodEntry == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
+		call.setEntryType(methodEntry.getType());
 		
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
@@ -318,22 +332,22 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(VirtualCall call) {
+		SymbolEntry methodEntry;
 		if (call.isExternal()) {
 			call.getLocation().setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)call.getLocation().accept(this))
 				return false;
-			if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint) == null) {
-				this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
-						"the method " + call.getName() + " dosen't exist");
-				return false;
-			}
+			methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint);
 		}
-		else if(getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, call.getSymbolsTable()) == null) {
+		else 
+			methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, call.getSymbolsTable());
+		
+		if(methodEntry == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-		
+		call.setEntryType(methodEntry.getType());
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))
@@ -351,18 +365,21 @@ public class SymbolsTableBuilder implements Visitor {
 		
 		bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		this.currentClassSymbolTablePoint = bottomSymbolTable;
-				
+		thisExpression.setEntryType(this.currentClassSymbolTablePoint.getParentSymbolTable().getEntry(bottomSymbolTable.getId()).getType());
+		
 		return true;
 	}
 
 	@Override
 	public Object visit(NewClass newClass) {
-		if (this.rootSymbolTable.findChildSymbolTable(newClass.getName()) == null) {
+		SymbolTable clsSymbolTable = this.rootSymbolTable.findChildSymbolTable(newClass.getName());
+		if (clsSymbolTable == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(newClass.getLine(),
 					"the class " + newClass.getName() + " dosen't exist");
 			return false;
 		}
 		
+		newClass.setEntryType(clsSymbolTable.getParentSymbolTable().getEntry(newClass.getName()).getType());
 		return true;
 	}
 
@@ -371,12 +388,18 @@ public class SymbolsTableBuilder implements Visitor {
 		newArray.getSize().setSymbolsTable(newArray.getSymbolsTable());
 		if (!(Boolean)newArray.getSize().accept(this))
 			return false;
-
+		if (newArray.getType() instanceof PrimitiveType)
+			newArray.setEntryType(typeTable.getArrayType(typeTable.getPrimitiveType(newArray.getType().getName()), 
+					newArray.getType().getDimension()));
+		if (newArray.getType() instanceof UserType)
+			newArray.setEntryType(typeTable.getArrayType(typeTable.getClassType(newArray.getType().getName()), 
+					newArray.getType().getDimension()));
 		return true;
 	}
 
 	@Override
 	public Object visit(Length length) {
+		length.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
 		return true;
 	}
 
@@ -388,7 +411,7 @@ public class SymbolsTableBuilder implements Visitor {
 		binaryOp.getSecondOperand().setSymbolsTable(binaryOp.getSymbolsTable());
 		if(!(Boolean)binaryOp.getSecondOperand().accept(this))
 			return false;
-
+		binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
 		return true;
 	}
 
@@ -400,7 +423,8 @@ public class SymbolsTableBuilder implements Visitor {
 		binaryOp.getSecondOperand().setSymbolsTable(binaryOp.getSymbolsTable());
 		if(!(Boolean)binaryOp.getSecondOperand().accept(this))
 			return false;
-
+		
+		binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
 		return true;
 	}
 
@@ -409,7 +433,8 @@ public class SymbolsTableBuilder implements Visitor {
 		unaryOp.getOperand().setSymbolsTable(unaryOp.getSymbolsTable());
 		if(!(Boolean)unaryOp.getOperand().accept(this))
 			return false;
-
+		
+		unaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
 		return true;
 	}
 
@@ -418,19 +443,24 @@ public class SymbolsTableBuilder implements Visitor {
 		unaryOp.getOperand().setSymbolsTable(unaryOp.getSymbolsTable());
 		if(!(Boolean)unaryOp.getOperand().accept(this))
 			return false;
-
+		
+		unaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
 		return true;
 	}
 
 	@Override
 	public Object visit(Literal literal) {
+		literal.setEntryType(typeTable.getLiteralType(literal.getType().getDescription()));
 		return true;
 	}
 
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
 		expressionBlock.getExpression().setSymbolsTable(expressionBlock.getSymbolsTable());
-		return expressionBlock.getExpression().accept(this);
+		if (!(Boolean)expressionBlock.getExpression().accept(this))
+			return false;
+		expressionBlock.setEntryType(expressionBlock.getExpression().getEntryType());
+		return true;
 	}
 	
 	private Object visitMethod(Method method) {

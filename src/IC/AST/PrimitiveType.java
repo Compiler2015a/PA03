@@ -34,7 +34,19 @@ public class PrimitiveType extends Type {
 	
 	@Override
 	public boolean nullAssignable() {
-		return type == DataTypes.STRING ;
+		return type == DataTypes.STRING || getDimension() > 0;
+	}
+	
+	@Override
+	public boolean nullComparable() {
+		return type == DataTypes.STRING || type == DataTypes.VOID || getDimension() > 0;
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new PrimitiveType(getLine(), type);
+		other.setDimension(getDimension());
+		return other;
 	}
 
 }

@@ -277,7 +277,7 @@ expr ::=	location:l {: RESULT = l; :} | call:c {: RESULT = c; :} |
 			NEW_KEYWORD:n_key CLASS_ID:c LP RP
 			{: RESULT = new NewClass(n_keyleft, c.toString()); :} |
 			NEW_KEYWORD type:t LC expr:exp RC
-			{: RESULT = new NewArray(t, exp); :} |
+			{: t.incrementDimension(); RESULT = new NewArray(t, exp); :} |
 			expr:exp DOT LENGTH_KEYWORD
 			{: RESULT = new Length(exp); :} | 
 			expr:exp1 logicbinop:bOp expr:exp2

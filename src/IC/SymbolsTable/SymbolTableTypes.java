@@ -14,5 +14,5 @@ public enum SymbolTableTypes {
 	
 	public String toString(){
 	    return repr;
-}
+	}
 }

@@ -11,7 +11,7 @@ public abstract class Type {
 	}
 	
 	public abstract boolean isNullAssignable();
-	
+	public abstract boolean isNullComparable();
 	public boolean subTypeOf(Type t)
 	{
 		if(this.name.compareTo(t.name)==0)
@@ -39,6 +39,12 @@ class IntType extends Type
 	public boolean isNullAssignable() {
 		return false;
 	}
+
+	@Override
+	public boolean isNullComparable() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
 
 class BoolType extends Type 
@@ -55,6 +61,12 @@ class BoolType extends Type
 	
 	@Override
 	public boolean isNullAssignable() {
+		return false;
+	}
+
+	@Override
+	public boolean isNullComparable() {
+		// TODO Auto-generated method stub
 		return false;
 	}
 	
@@ -76,6 +88,11 @@ class NullType extends Type
 	public boolean isNullAssignable() {
 		return true;
 	}
+
+	@Override
+	public boolean isNullComparable() {
+		return true;
+	}
 }
 
 class StringType extends Type 
@@ -92,6 +109,11 @@ class StringType extends Type
 	
 	@Override
 	public boolean isNullAssignable() {
+		return true;
+	}
+
+	@Override
+	public boolean isNullComparable() {
 		return true;
 	}
 }
@@ -112,6 +134,11 @@ class VoidType extends Type
 	public boolean isNullAssignable() {
 		return false;
 	}
+
+	@Override
+	public boolean isNullComparable() {
+		return true;
+	}
 }
 
 class ArrayType extends Type 
@@ -130,6 +157,12 @@ class ArrayType extends Type
 	
 	@Override
 	public boolean isNullAssignable() {
+		return true;
+	}
+
+	@Override
+	public boolean isNullComparable() {
+		// TODO Auto-generated method stub
 		return true;
 	}
 }
@@ -162,40 +195,48 @@ class MethodType extends Type
 		System.out.println("Type file = "+ returnType.name);
 		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
 	}
+
+	@Override
+	public boolean isNullComparable() {
+		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
+	}
 }
 
 class ClassType extends Type 
 {   
 	ICClass classAST;
-	Integer superClassTypeId;
+	String superClass;
 
 
 	public ClassType(ICClass classAST)
 	{
 		super("ClassType");
 		this.classAST = classAST;
-		this.superClassTypeId = null;
+		this.superClass = null;
+		if (classAST.hasSuperClass())
+			this.superClass = classAST.getSuperClassName();
 	}
 	
-	public Integer getSuperClassTypeId() {
-		if (!classAST.hasSuperClass())
-			return null;
-		return superClassTypeId;
+	public String getSuperClassName() {
+		return superClass;
 	}
 
-	public void setSuperClassTypeId(Integer superClassTypeId) {
-		this.superClassTypeId = superClassTypeId;
+	public Boolean hasSuperClass() {
+		return (superClass != null);
 	}
 	
 	@Override
 	public String toString() {
-		if (classAST.hasSuperClass())
-			return classAST.getName() + ", Superclass ID: " + superClassTypeId;
 		return classAST.getName();
 	}
 	
 	@Override
 	public boolean isNullAssignable() {
+		return true;
+	}
+
+	@Override
+	public boolean isNullComparable() {
 		return true;
 	}
 }

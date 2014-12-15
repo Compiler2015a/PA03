@@ -13,6 +13,7 @@ import IC.AST.Method;
 import IC.AST.PrimitiveType;
 import IC.AST.UserType;
 import IC.DataTypes;
+import IC.LiteralTypes;
 
 public class TypeTable {
 
@@ -21,7 +22,7 @@ public class TypeTable {
 	private Map<Type, Integer> values;
 	// Maps element types to array types
 	private Map<Type,ArrayType> uniqueArrayTypes;
-	public Map<String,ClassType> uniqueClassTypes;
+	private Map<String,ClassType> uniqueClassTypes;
 	private Map<String,MethodType> uniqueMethodTypes;
 	
 	private Type intType;
@@ -72,19 +73,21 @@ public class TypeTable {
 		List<Map.Entry<String,ClassType>> sorted_uniqueClassTypes =
 	            new ArrayList<Map.Entry<String,ClassType>>( uniqueClassTypes.entrySet() );
 		Collections.sort(sorted_uniqueClassTypes, new Comparator<Map.Entry<String,ClassType>>() {
-	           public int compare( Map.Entry<String,ClassType> o1, Map.Entry<String,ClassType> o2 )
-	            {
+	           public int compare( Map.Entry<String,ClassType> o1, Map.Entry<String,ClassType> o2 ) {
 	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
 	            }
 		});
-		for (Map.Entry<String,ClassType> entry : sorted_uniqueClassTypes) 
-			System.out.println("    " + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
+		for (Map.Entry<String,ClassType> entry : sorted_uniqueClassTypes) {
+			System.out.print("    " + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
+			if (entry.getValue().hasSuperClass())
+				System.out.print(", Superclass ID: " + values.get(uniqueClassTypes.get(entry.getValue().getSuperClassName())));
+			System.out.println();
+		}
 		
 		List<Map.Entry<Type,ArrayType>> sorted_uniqueArrayTypes =
 	            new ArrayList<Map.Entry<Type,ArrayType>>( uniqueArrayTypes.entrySet() );
 		Collections.sort(sorted_uniqueArrayTypes, new Comparator<Map.Entry<Type,ArrayType>>() {
-	           public int compare( Map.Entry<Type,ArrayType> o1, Map.Entry<Type,ArrayType> o2 )
-	            {
+	           public int compare( Map.Entry<Type,ArrayType> o1, Map.Entry<Type,ArrayType> o2 ) {
 	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
 	            }
 		});
@@ -95,8 +98,7 @@ public class TypeTable {
 		List<Map.Entry<String,MethodType>> sorted_uniqueMethodTypes =
 	            new ArrayList<Map.Entry<String,MethodType>>( uniqueMethodTypes.entrySet() );
 		Collections.sort(sorted_uniqueMethodTypes, new Comparator<Map.Entry<String,MethodType>>() {
-	           public int compare( Map.Entry<String,MethodType> o1, Map.Entry<String,MethodType> o2 )
-	            {
+	           public int compare( Map.Entry<String,MethodType> o1, Map.Entry<String,MethodType> o2 ) {
 	                return Integer.compare(values.get(o1.getValue()), values.get(o2.getValue()));
 	            }
 		});
@@ -139,18 +141,19 @@ public class TypeTable {
 		if (uniqueClassTypes.containsKey(classAST))
 			return true;
 		ClassType clst = new ClassType(classAST);
-		if (classAST.hasSuperClass()) {
-			if (!uniqueClassTypes.containsKey(classAST.getSuperClassName()))
+		if (clst.hasSuperClass()) {
+			if (!uniqueClassTypes.containsKey(clst.getSuperClassName()))
 				return false;
-
-			clst.setSuperClassTypeId(values.get(
-					uniqueClassTypes.get(classAST.getSuperClassName())));
 		}
 		uniqueClassTypes.put(classAST.getName(), clst);
 		values.put(clst, idCounter);
 		idCounter++;
 		
 		return true;
+	}
+	
+	public ClassType getClassType(String clsName) {
+		return uniqueClassTypes.get(clsName);
 	}
 	
 	public void addMethodType(Method method) {
@@ -167,7 +170,7 @@ public class TypeTable {
 		return uniqueMethodTypes.get(methodType.toString());
 	}
 	
-	private Type getPrimitiveType(String dataTypeName) {
+	public Type getPrimitiveType(String dataTypeName) {
 		if (dataTypeName == DataTypes.INT.getDescription())
 			return intType;
 		if (dataTypeName == DataTypes.STRING.getDescription())
@@ -180,6 +183,19 @@ public class TypeTable {
 		return null;
 	}
 	
+	public Type getLiteralType(String literalTypeName) {
+		if (literalTypeName == LiteralTypes.INTEGER.getDescription())
+			return intType;
+		if (literalTypeName == LiteralTypes.STRING.getDescription())
+			return stringType;
+		if ((literalTypeName == LiteralTypes.TRUE.getDescription()) || (literalTypeName == LiteralTypes.FALSE.getDescription()))
+			return boolType;
+		if (literalTypeName == LiteralTypes.NULL.getDescription())
+			return nullType;
+		
+		return null;
+
+	}
 	private ArrayType addAndReturnArraySingleType(Type elemType) {
 		if (uniqueArrayTypes.containsKey(elemType))
 			return uniqueArrayTypes.get(elemType);
@@ -191,7 +207,7 @@ public class TypeTable {
 		return arrt;
 	}
 	
-	private ArrayType getArrayType(Type original, int dimention) {
+	public ArrayType getArrayType(Type original, int dimention) {
 		Type currArrType = original;
 		for (int i = 0; i < dimention; i++) 
 			currArrType = uniqueArrayTypes.get(currArrType);
