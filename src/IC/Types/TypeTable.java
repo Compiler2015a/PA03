@@ -13,6 +13,7 @@ import IC.AST.Method;
 import IC.AST.PrimitiveType;
 import IC.AST.UserType;
 import IC.DataTypes;
+import IC.LiteralTypes;
 
 public class TypeTable {
 
@@ -21,7 +22,7 @@ public class TypeTable {
 	private Map<Type, Integer> values;
 	// Maps element types to array types
 	private Map<Type,ArrayType> uniqueArrayTypes;
-	public Map<String,ClassType> uniqueClassTypes;
+	private Map<String,ClassType> uniqueClassTypes;
 	private Map<String,MethodType> uniqueMethodTypes;
 	
 	private Type intType;
@@ -153,6 +154,10 @@ public class TypeTable {
 		return true;
 	}
 	
+	public ClassType getClassType(String clsName) {
+		return uniqueClassTypes.get(clsName);
+	}
+	
 	public void addMethodType(Method method) {
 		MethodType methodType = generateMethodType(method);
 		if (uniqueMethodTypes.containsKey(methodType.toString()))
@@ -167,7 +172,7 @@ public class TypeTable {
 		return uniqueMethodTypes.get(methodType.toString());
 	}
 	
-	private Type getPrimitiveType(String dataTypeName) {
+	public Type getPrimitiveType(String dataTypeName) {
 		if (dataTypeName == DataTypes.INT.getDescription())
 			return intType;
 		if (dataTypeName == DataTypes.STRING.getDescription())
@@ -180,6 +185,19 @@ public class TypeTable {
 		return null;
 	}
 	
+	public Type getLiteralType(String literalTypeName) {
+		if (literalTypeName == LiteralTypes.INTEGER.getDescription())
+			return intType;
+		if (literalTypeName == LiteralTypes.STRING.getDescription())
+			return stringType;
+		if ((literalTypeName == LiteralTypes.TRUE.getDescription()) || (literalTypeName == LiteralTypes.FALSE.getDescription()))
+			return boolType;
+		if (literalTypeName == LiteralTypes.NULL.getDescription())
+			return nullType;
+		
+		return null;
+
+	}
 	private ArrayType addAndReturnArraySingleType(Type elemType) {
 		if (uniqueArrayTypes.containsKey(elemType))
 			return uniqueArrayTypes.get(elemType);
@@ -191,7 +209,7 @@ public class TypeTable {
 		return arrt;
 	}
 	
-	private ArrayType getArrayType(Type original, int dimention) {
+	public ArrayType getArrayType(Type original, int dimention) {
 		Type currArrType = original;
 		for (int i = 0; i < dimention; i++) 
 			currArrType = uniqueArrayTypes.get(currArrType);

@@ -1,8 +1,3 @@
-Parsed libic.sig successfully!
-Parsed I:\PA3\example2.ic successfully!
-
-Abstract Syntax Tree: I:\PA3\example2.ic
-
 1: Declaration of class: A, Type: A, Symbol table: Global
     2: Declaration of field: str, Type: string, Symbol table: A
     3: Declaration of field: i, Type: int, Symbol table: A
