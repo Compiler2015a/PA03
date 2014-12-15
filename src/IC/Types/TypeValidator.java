@@ -70,7 +70,14 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(PrimitiveType type) {
-		return type;
+		switch(type.getName())
+		{
+		case "int":return new IntType();
+		case "boolean":return new BoolType();
+		case "string":return new StringType();
+		case "void":return new VoidType();
+		}
+		return new NullType();
 	}
 
 	@Override
@@ -78,12 +85,12 @@ public class TypeValidator implements Visitor{
 		return type;
 	}
 	
-	private boolean isTypeAssignmentValid(Type typeTo, Type typeFrom, SymbolTable scope) {
+	private boolean isTypeAssignmentValid(IC.AST.Type typeTo, Type typeFrom, SymbolTable scope) {
 		// check if type can be assigned null
-		if (typeTo.nullAssignable() && typeFrom.equals("void")) 
+		if (typeTo.nullAssignable() && typeFrom.getName().equals("VoidType")) 
 			return true;
 		// check if the types are equal
-		if (typeTo.getName().equals(typeFrom.getName())) 
+		if (typeTo.getName().equals(typeFrom.toString())) 
 			return true;
 		// check hierarchy (don't allow object array subtyping)
 		if (scope.isTypeOf(typeTo.getName(), typeFrom.getName()) &&
@@ -96,9 +103,9 @@ public class TypeValidator implements Visitor{
 	public Object visit(Assignment assignment) {
 		Type typeTo = (Type)assignment.getVariable().accept(this);
 		Type typeFrom = (Type)assignment.getAssignment().accept(this);
+		
 		if (typeTo==null || typeFrom == null)
 			throw new TypeException("Assignment variable and value must be of non-void type", assignment.getLine());
-		
 		return typeTo;
 	}
 
@@ -109,9 +116,9 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Return returnStatement) {
-		IC.AST.Type typeInFact = new PrimitiveType(returnStatement.getLine(), DataTypes.VOID); 
+		Type typeInFact = new VoidType();
 		if (returnStatement.getValue() != null) {
-			typeInFact = (IC.AST.Type)returnStatement.getValue().accept(this);
+			typeInFact = (Type)returnStatement.getValue().accept(this);
 			if (typeInFact == null)
 				throw new TypeException("Return value must be of non-void type", returnStatement.getLine());
 		}
@@ -185,11 +192,12 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
-		if (localVariable.getInitValue() != null) {
+		if (localVariable.getInitValue() != null) 
+		{
 			Type type = (Type)localVariable.getInitValue().accept(this);
 			if (type == null) 
 				throw new TypeException("Initializing value must be of non-void type", localVariable.getLine());
-			if (isTypeAssignmentValid(localVariable.getEntryType(), type, localVariable.getSymbolsTable()) == false) {
+			if (isTypeAssignmentValid(localVariable.getType(), type, localVariable.getSymbolsTable()) == false) {
 				throw new TypeException("Value assigned to local variable type mismatch", localVariable.getLine());
 			} 
 		}
@@ -227,15 +235,15 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(ArrayLocation location) {
-		IC.AST.Type typeIndex = (IC.AST.Type)location.getIndex().accept(this);
-		IC.AST.Type typeArray = (IC.AST.Type)location.getArray().accept(this);
+		Type typeIndex = (Type)location.getIndex().accept(this);
+		Type typeArray = (Type)location.getArray().accept(this);
 		if (typeIndex == null || typeIndex.equals("int") == false)
 			throw new TypeException("Array index must be an integer", location.getLine());
 		if (typeArray == null)
 			throw new TypeException("Array type must be of non-void type", location.getLine());
-		IC.AST.Type typeReturned = typeArray.clone();
-		typeReturned.decrementDimension();
-		return typeReturned;
+		//Type typeReturned = typeArray.clone();
+		//typeReturned.decrementDimension();
+		return new ArrayType(typeArray);
 	}
 
 	@Override
@@ -327,8 +335,8 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(NewArray newArray) {
-	System.out.println("blabla\n");
 		Type typeSize = (Type)newArray.getSize().accept(this);
+		
 		Type typeArray = (Type)newArray.getType().accept(this);
 		if (typeSize == null || typeSize.getName().equals("IntType") == false)
 			throw new TypeException("Array size must be an integer", newArray.getLine());
@@ -370,6 +378,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(LogicalBinaryOp binaryOp) {
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
+		System.out.println("^"+typeFirst+" "+ typeSecond+"\n");
 				if (typeFirst == null || typeSecond == null)
 			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
 		String onWhat = "";
@@ -437,6 +446,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(MathBinaryOp binaryOp) {
+		
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
 		
