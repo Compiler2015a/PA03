@@ -12,6 +12,7 @@ public abstract class Type {
 	
 	public abstract boolean nullAssignable();
 	public abstract boolean nullComparable();
+	public abstract Type clone();
 	public boolean subTypeOf(Type t)
 	{
 		if(this.name.compareTo(t.name)==0)
@@ -54,6 +55,13 @@ class IntType extends Type
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
+	@Override
+	public Type clone() {
+		Type other = new IntType();
+		other.name=this.name;
+		return other;
+	}
 }
 
 class BoolType extends Type 
@@ -78,7 +86,12 @@ class BoolType extends Type
 		// TODO Auto-generated method stub
 		return false;
 	}
-	
+	@Override
+	public Type clone() {
+		Type other = new BoolType();
+		other.name=this.name;
+		return other;
+	}
 }
 
 class NullType extends Type 
@@ -101,6 +114,12 @@ class NullType extends Type
 	@Override
 	public boolean nullComparable() {
 		return true;
+	}
+	@Override
+	public Type clone() {
+		Type other = new NullType();
+		other.name=this.name;
+		return other;
 	}
 }
 
@@ -125,6 +144,12 @@ class StringType extends Type
 	public boolean nullComparable() {
 		return true;
 	}
+	@Override
+	public Type clone() {
+		Type other = new StringType();
+		other.name=this.name;
+		return other;
+	}
 }
 
 class VoidType extends Type 
@@ -147,6 +172,13 @@ class VoidType extends Type
 	@Override
 	public boolean nullComparable() {
 		return true;
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new VoidType();
+		other.name=this.name;
+		return other;
 	}
 }
 
@@ -173,6 +205,13 @@ class ArrayType extends Type
 	public boolean nullComparable() {
 		// TODO Auto-generated method stub
 		return true;
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new ArrayType(this.elemType);
+		other.name=this.name;
+		return other;
 	}
 }
 
@@ -208,6 +247,13 @@ class MethodType extends Type
 	@Override
 	public boolean nullComparable() {
 		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new MethodType(this.paramTypes,this.returnType);
+		other.name=this.name;
+		return other;
 	}
 }
 
@@ -247,5 +293,12 @@ class ClassType extends Type
 	@Override
 	public boolean nullComparable() {
 		return true;
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new ClassType(this.classAST);
+		other.name=this.name;
+		return other;
 	}
 }
