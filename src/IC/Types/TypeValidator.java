@@ -40,7 +40,7 @@ public class TypeValidator implements Visitor{
 		return null;
 	}
 	
-	public void visitMethod(Method method) {
+	public Object visitMethod(Method method) {
 		
 		for (Formal formal : method.getFormals()) {
 			formal.accept(this);
@@ -49,34 +49,22 @@ public class TypeValidator implements Visitor{
 		for (Statement statement : method.getStatements()) {
 			statement.accept(this);
 		}
-		
-		if (method.getType().getName().equals("void"))
-			return;
-		
-		for (Statement statement : method.getStatements()) {
-			if (statement.accept(this) != null)
-				return;
-		}
-		throw new TypeException(String.format("Method %s has no return statement", method.getName()), method.getLine());
-		//return null;
+		return null;
 	}
 
 	@Override
 	public Object visit(VirtualMethod method) {
-		visitMethod(method);
-		return null;
+		return visitMethod(method);
 	}
 
 	@Override
 	public Object visit(StaticMethod method) {
-		visitMethod(method);
-		return null;
+		return visitMethod(method);
 	}
 
 	@Override
 	public Object visit(LibraryMethod method) {
-		visitMethod(method);
-		return null;
+		return visitMethod(method);
 	}
 
 	@Override
@@ -139,7 +127,8 @@ public class TypeValidator implements Visitor{
 				throw new TypeException("Return value must be of non-void type", returnStatement.getLine());
 		}
 		SymbolTable scope = returnStatement.getSymbolsTable();
-		while (scope.getType() != IDSymbolsKinds.STATIC_METHOD &&
+		//System.out.println("*1"+scope.getType()+"\n");
+		while (scope!=null && scope.getType()!=null && scope.getType() != IDSymbolsKinds.STATIC_METHOD &&
 				scope.getType() != IDSymbolsKinds.VIRTUAL_METHOD) {
 			scope = scope.getParentSymbolTable();
 		}
@@ -401,7 +390,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(LogicalBinaryOp binaryOp) {
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-
+		System.out.println("^"+typeFirst+" "+ typeSecond+"\n");
 				if (typeFirst == null || typeSecond == null)
 			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
 		String onWhat = "";

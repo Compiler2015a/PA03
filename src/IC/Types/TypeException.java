@@ -4,7 +4,7 @@ public class TypeException extends RuntimeException{
 	private int line;
 	public TypeException(String message, int line)
 	{
-		super("semantic error at line " + line + ": " + message);
+		super(message);
         this.line = line;
     }
 

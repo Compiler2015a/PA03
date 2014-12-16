@@ -66,6 +66,8 @@ public class Compiler {
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
 			//System.out.println(printer.visit(ICRoot));
 			//validates that all the return values are correct
+			ReturnValidator rv = new ReturnValidator();
+			ICRoot.accept(rv);
 			
 			//validates that all the types are correct
 			TypeValidator tv = new TypeValidator();
