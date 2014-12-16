@@ -355,9 +355,9 @@ public class TypeValidator implements Visitor{
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
-		case UMINUS:
-			if (type.getName().equals("IntType"))
-				return new IntType();
+		case LNEG:
+			if (type.getName().equals("BoolType"))
+				return new BoolType();
 			break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
@@ -420,9 +420,9 @@ public class TypeValidator implements Visitor{
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
-		case LNEG:
-			if (type.getName().equals("BoolType"))
-				return new BoolType();
+		case UMINUS:
+			if (type.getName().equals("IntType"))
+				return new IntType();
 			break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
