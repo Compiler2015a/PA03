@@ -128,10 +128,9 @@ public class TypeValidator implements Visitor{
 		}
 		SymbolTable scope = returnStatement.getSymbolsTable();
 		//System.out.println("*1"+scope.getType()+"\n");
-		while (scope!=null && scope.getType()!=null && scope.getType() != IDSymbolsKinds.STATIC_METHOD &&
-				scope.getType() != IDSymbolsKinds.VIRTUAL_METHOD) {
+		while (scope.getId().contains("block#")) 
 			scope = scope.getParentSymbolTable();
-		}
+		
 		//get the return type of the match method=scope
 		String typeExpected="void";
 		for(SymbolEntry x: scope.getParentSymbolTable().getEntries().values())
