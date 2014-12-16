@@ -26,26 +26,36 @@ public class TypeTableBuilder implements Visitor {
 	}
 	
 	private Boolean findMainMethod(Program program) {
+		int mainMethodCounter = 0;
+		Method lastMainMethod = null;
 		for (ICClass icClass : program.getClasses()) {
 			for (Method method : icClass.getMethods()) {
 				if (method.getName().equals("main")) {
-					for (Formal formal : method.getFormals())
-						formal.accept(this);
-					method.getType().accept(this);
-					
-					builtTypeTable.addMethodType(method);
-					return true;
+					lastMainMethod = method;
+					mainMethodCounter++;
 				}
 			}
 		}
-		semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is missing");
+		if (mainMethodCounter == 0) {
+			semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is missing");
+			return false;
+		}
+		if (mainMethodCounter > 1) {
+			semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is declared more than once");
+			return false;
+		}
+		
+		for (Formal formal : lastMainMethod.getFormals())
+			formal.accept(this);
+		lastMainMethod.getType().accept(this);
+		
+		builtTypeTable.addMethodType(lastMainMethod);
+		return true;
+		
 		// TODO:
 		/*
 		 * 1) Replace line 1 in the last line (according to the forum)
-		 * 2) Check in the specification if we should also throw an error if there are more
-		 * 	  than one Main method.
-		 */
-		return false;
+		 * */
 	}
 	
 	@Override
