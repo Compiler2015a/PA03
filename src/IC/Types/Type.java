@@ -196,6 +196,10 @@ class ArrayType extends Type
 		return elemType.toString() + "[]";
 	}
 	
+	public Type getElemType() {
+		return elemType;
+	}
+
 	@Override
 	public boolean nullAssignable() {
 		return true;

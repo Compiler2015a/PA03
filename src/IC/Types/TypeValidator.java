@@ -110,6 +110,8 @@ public class TypeValidator implements Visitor{
 		
 		if (typeTo==null || typeFrom == null)
 			throw new TypeException("Assignment variable and value must be of non-void type", assignment.getLine());
+		if (typeTo != typeFrom)
+			throw new TypeException("Value assigned to local variable type mismatch", assignment.getLine());
 		return typeTo;
 	}
 
@@ -234,14 +236,14 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(ArrayLocation location) {
 		Type typeIndex = (Type)location.getIndex().accept(this);
-		Type typeArray = (Type)location.getArray().accept(this);
+		Type typeArray = location.getEntryType();
 		if (typeIndex == null || typeIndex.getName().equals("IntType") == false)
 			throw new TypeException("Array index must be an integer", location.getLine());
 		if (typeArray == null)
 			throw new TypeException("Array type must be of non-void type", location.getLine());
 		//Type typeReturned = typeArray.clone();
 		//typeReturned.decrementDimension();
-		return new ArrayType(typeArray);
+		return typeArray;
 	}
 
 	@Override
@@ -343,11 +345,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Literal literal) {
-		if(literal.getType().toString().equals("INTEGER"))
-			return new IntType();//(literal.getLine(), DataTypes.INT);	
-		if(literal.getType().toString().equals("STRING"))
-			return new StringType();
-		return null;
+		return literal.getEntryType();
 	}
 
 	@Override
@@ -373,39 +371,45 @@ public class TypeValidator implements Visitor{
 		{
 			if(!((typeFirst.nullComparable() && typeSecond==null) || (typeSecond.nullComparable() && typeFirst==null)))
 				throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
-			return new BoolType();
+			return binaryOp.getEntryType();
 		}
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
-		case LAND:
-		case LOR:
-			if (typeFirst.getName().equals("BoolType") && typeSecond.getName().equals("BoolType")) 
-				return new BoolType();
-			onWhat = "non-boolean";
-			opType = "logical";
-			break;
-		case LT:
-		case LTE:
-		case GT:
-		case GTE:
-			if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-				return new BoolType();
-			onWhat = "non-integer";
-			opType = "logical";
-			break;
-		case EQUAL:
-		case NEQUAL:
-			if (typeFirst.getName().equals(typeSecond.getName()))
-				return new BoolType();
-			if (typeFirst.nullComparable() && typeSecond.getName().equals("void"))
-				return new BoolType();
-			if (typeFirst.getName().equals("void") && typeSecond.nullComparable()) 
-				return new BoolType();
-			onWhat = "not-fitting";
-			opType = "logical";
-			break;
-			}
+			case LAND:
+			case LOR:
+				if (typeFirst.getName().equals("BoolType") && typeSecond.getName().equals("BoolType")) 
+					return binaryOp.getEntryType();
+				onWhat = "non-boolean";
+				opType = "logical";
+				break;
+			case LT:
+			case LTE:
+			case GT:
+			case GTE:
+				if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+					return binaryOp.getEntryType();
+				onWhat = "non-integer";
+				opType = "logical";
+				break;
+			case EQUAL:
+			case NEQUAL:
+				if (typeFirst == typeSecond)
+					return binaryOp.getEntryType();
+				if (typeFirst.nullComparable() && typeSecond.getName().equals("void")) // TODO ?????
+					return binaryOp.getEntryType();
+				if (typeFirst.getName().equals("void") && typeSecond.nullComparable()) 
+					return binaryOp.getEntryType();
+				if ((typeFirst.nullComparable()) && (typeSecond.getName().equals("NullType")))
+					return binaryOp.getEntryType();
+				if ((typeFirst.getName().equals("NullType")) && (typeSecond.nullComparable()))
+					return binaryOp.getEntryType();
+				onWhat = "not-fitting";
+				opType = "logical";
+				break;
+			default:
+				break;
+		}
 		
 		throw new TypeException(String.format("Invalid %s binary op (%s) on %s expression",
 				opType, binaryOp.getOperator().toString(),
@@ -449,10 +453,9 @@ public class TypeValidator implements Visitor{
 		String opType = "";
 		switch(binaryOp.getOperator()) {
 	case PLUS:
-		if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-			return new IntType();
-		if (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType")) 
-			return new StringType();
+		if ((typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+				|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) 
+				return typeFirst;
 		onWhat = "non-integer or non-string";
 		opType = "arithmetic";
 		break;
@@ -461,7 +464,7 @@ public class TypeValidator implements Visitor{
 	case DIVIDE:
 	case MOD:
 		if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-			return new IntType();
+			return typeFirst;
 		onWhat = "non-integer";
 		opType = "arithmetic";
 		break;
