@@ -228,20 +228,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(VariableLocation location) {
-		/*if (location.isExternal()) 
-		{
-			System.out.println("111\n");
-			return location.getLocation().accept(this);
-		}
-		System.out.println("222\n");
-		return true;*/
-		SymbolEntry sym = location.getSymbolsTable().getEntry(location.getName());
-		if (sym.getKind() ==IDSymbolsKinds.FIELD) {
-			if (location.getSymbolsTable().getType() == IDSymbolsKinds.STATIC_METHOD)
-				throw new TypeException("Use of field inside static method is not allowed", location.getLine());
-		}
-		return sym.getType();
-
+		return location.getEntryType();
 	}
 
 	@Override
@@ -334,14 +321,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(NewClass newClass) {
-		
-		SymbolTable scope = newClass.getSymbolsTable();
-		while (scope.getParentSymbolTable() != null)
-			scope = scope.getParentSymbolTable();
-		scope = scope.getClassScope(newClass.getName());
-		if (scope == null)
-			throw new TypeException("Unknown class name to be created", newClass.getLine());
-		return new UserType(newClass.getLine(), newClass.getName());
+		return newClass.getEntryType();
 	}
 
 	@Override
