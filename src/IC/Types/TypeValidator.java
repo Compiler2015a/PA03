@@ -367,12 +367,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(LogicalBinaryOp binaryOp) {
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-		if (typeFirst == null || typeSecond == null)
-		{
-			if(!((typeFirst.nullComparable() && typeSecond==null) || (typeSecond.nullComparable() && typeFirst==null)))
-				throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
-			return binaryOp.getEntryType();
-		}
+
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
