@@ -165,7 +165,7 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(While whileStatement) {
 		Type typeCondition = (Type)whileStatement.getCondition().accept(this);
-		if (typeCondition == null || typeCondition.equals("boolean") == false)
+		if (typeCondition == null || typeCondition.getName().equals("BoolType") == false)
 			throw new TypeException("Non boolean condition for while statement", whileStatement.getLine());
 		loopNesting++;
 		whileStatement.getOperation().accept(this);
@@ -235,7 +235,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(ArrayLocation location) {
 		Type typeIndex = (Type)location.getIndex().accept(this);
 		Type typeArray = (Type)location.getArray().accept(this);
-		if (typeIndex == null || typeIndex.equals("int") == false)
+		if (typeIndex == null || typeIndex.getName().equals("IntType") == false)
 			throw new TypeException("Array index must be an integer", location.getLine());
 		if (typeArray == null)
 			throw new TypeException("Array type must be of non-void type", location.getLine());
@@ -369,9 +369,12 @@ public class TypeValidator implements Visitor{
 	public Object visit(LogicalBinaryOp binaryOp) {
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-		System.out.println("^"+typeFirst+" "+ typeSecond+"\n");
-				if (typeFirst == null || typeSecond == null)
-			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
+		if (typeFirst == null || typeSecond == null)
+		{
+			if(!((typeFirst.nullComparable() && typeSecond==null) || (typeSecond.nullComparable() && typeFirst==null)))
+				throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
+			return new BoolType();
+		}
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
@@ -440,12 +443,10 @@ public class TypeValidator implements Visitor{
 		
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-		
 		if (typeFirst == null || typeSecond == null)
 			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
 		String onWhat = "";
 		String opType = "";
-		
 		switch(binaryOp.getOperator()) {
 	case PLUS:
 		if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 

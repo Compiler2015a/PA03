@@ -1,11 +1,7 @@
 package IC;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-
-
-
 import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
