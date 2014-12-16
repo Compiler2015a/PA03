@@ -40,7 +40,7 @@ public class TypeValidator implements Visitor{
 		return null;
 	}
 	
-	public Object visitMethod(Method method) {
+	public void visitMethod(Method method) {
 		
 		for (Formal formal : method.getFormals()) {
 			formal.accept(this);
@@ -49,22 +49,34 @@ public class TypeValidator implements Visitor{
 		for (Statement statement : method.getStatements()) {
 			statement.accept(this);
 		}
-		return null;
+		
+		if (method.getType().getName().equals("void"))
+			return;
+		
+		for (Statement statement : method.getStatements()) {
+			if (statement.accept(this) != null)
+				return;
+		}
+		throw new TypeException(String.format("Method %s has no return statement", method.getName()), method.getLine());
+		//return null;
 	}
 
 	@Override
 	public Object visit(VirtualMethod method) {
-		return visitMethod(method);
+		visitMethod(method);
+		return null;
 	}
 
 	@Override
 	public Object visit(StaticMethod method) {
-		return visitMethod(method);
+		visitMethod(method);
+		return null;
 	}
 
 	@Override
 	public Object visit(LibraryMethod method) {
-		return visitMethod(method);
+		visitMethod(method);
+		return null;
 	}
 
 	@Override
@@ -389,7 +401,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(LogicalBinaryOp binaryOp) {
 		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
 		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-		System.out.println("^"+typeFirst+" "+ typeSecond+"\n");
+
 				if (typeFirst == null || typeSecond == null)
 			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
 		String onWhat = "";
