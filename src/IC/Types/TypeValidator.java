@@ -446,8 +446,10 @@ public class TypeValidator implements Visitor{
 			case MULTIPLY:
 			case DIVIDE:
 			case MOD:
-				if (typeFirst.isIntType() && typeSecond.isIntType()) 
+				if (typeFirst.isIntType() && typeSecond.isIntType()) {
+					binaryOp.setEntryType(typeFirst);
 					return typeFirst;
+				}
 				onWhat = "non-integer";
 				opType = "arithmetic";
 				break;
