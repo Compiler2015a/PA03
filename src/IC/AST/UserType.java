@@ -34,4 +34,16 @@ public class UserType extends Type {
 	public boolean nullAssignable() {
 		return true;
 	}
+	
+	@Override
+	public boolean nullComparable() {
+		return true;
+	}
+	
+	@Override
+	public Type clone() {
+		Type other = new UserType(getLine(), name);
+		other.setDimension(getDimension());
+		return other;
+	}
 }

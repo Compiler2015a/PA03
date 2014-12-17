@@ -50,7 +50,7 @@ public class TypeTable {
 			if (pt.getDimension() == 0) 
 				return primitive;
 			else
-				return getArrayType(primitive, pt.getDimension());
+				return getArrayFromType(primitive, pt.getDimension());
 		}
 		else {
 			UserType ut = (UserType)typeNode;
@@ -58,7 +58,7 @@ public class TypeTable {
 			if (ut.getDimension() == 0)
 				return clsType;
 			else 
-				return getArrayType(clsType, ut.getDimension());
+				return getArrayFromType(clsType, ut.getDimension());
 		}
 	}
 	
@@ -207,12 +207,23 @@ public class TypeTable {
 		return arrt;
 	}
 	
-	public ArrayType getArrayType(Type original, int dimention) {
+
+	public ArrayType getArrayFromType(Type original, int dimention) {
 		Type currArrType = original;
 		for (int i = 0; i < dimention; i++) 
 			currArrType = uniqueArrayTypes.get(currArrType);
 		
 		return (ArrayType)currArrType;
+	}
+	
+	public Type getTypeFromArray(Type arrayType) {
+		Type primitive = arrayType;
+		while (primitive.isArrayType()) {
+			ArrayType tempArrayType = (ArrayType)primitive;
+			primitive = tempArrayType.getElemType();
+		}
+
+		return primitive;
 	}
 	
 	private MethodType generateMethodType(Method method) {

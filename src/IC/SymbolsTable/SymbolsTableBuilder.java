@@ -296,7 +296,8 @@ public class SymbolsTableBuilder implements Visitor {
 		if (!(Boolean)location.getArray().accept(this))
 			return false;
 		
-		location.setEntryType(location.getArray().getEntryType());
+
+		location.setEntryType(typeTable.getTypeFromArray(location.getArray().getEntryType()));
 
 		location.getIndex().setSymbolsTable(location.getSymbolsTable());
 		if (!(Boolean)location.getIndex().accept(this))
@@ -389,10 +390,10 @@ public class SymbolsTableBuilder implements Visitor {
 		if (!(Boolean)newArray.getSize().accept(this))
 			return false;
 		if (newArray.getType() instanceof PrimitiveType)
-			newArray.setEntryType(typeTable.getArrayType(typeTable.getPrimitiveType(newArray.getType().getName()), 
+			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getPrimitiveType(newArray.getType().getName()), 
 					newArray.getType().getDimension()));
 		if (newArray.getType() instanceof UserType)
-			newArray.setEntryType(typeTable.getArrayType(typeTable.getClassType(newArray.getType().getName()), 
+			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getClassType(newArray.getType().getName()), 
 					newArray.getType().getDimension()));
 		return true;
 	}
@@ -411,7 +412,7 @@ public class SymbolsTableBuilder implements Visitor {
 		binaryOp.getSecondOperand().setSymbolsTable(binaryOp.getSymbolsTable());
 		if(!(Boolean)binaryOp.getSecondOperand().accept(this))
 			return false;
-		binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
+
 		return true;
 	}
 

@@ -1,32 +1,33 @@
 package IC;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-
-
+import sun.security.action.GetLongAction;
 import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
 import IC.SemanticAnalysis.SemanticError;
+import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.*;
 import IC.Types.*;
 
 public class Compiler {
 
+	private static final String LIB_NAME="Library";
+
 	public static void main(String[] args) {
 
-		if (args.length == 0 || args.length > 2) {
+		if (args.length == 0 || args.length > 4) {
 			System.err.println("Error: invalid arguments");
 			System.exit(-1);
 		}
-		
 		ICClass libRoot = null;
+		
 		try {
-			if(args.length == 2 && args[1].substring(0, 2).equals("-L")) { //if library required
+			if(getLibraryArgument(args)!=null) { //if library in arguments
 				//parse library file
-				File libFile = new File(args[1].substring(2));
+				File libFile = new File(getLibraryArgument(args));
 				FileReader libFileReader = new  FileReader(libFile);
 				LibLexer libScanner = new LibLexer(libFileReader);
 				LibParser libParser = new LibParser(libScanner);
@@ -34,10 +35,7 @@ public class Compiler {
 				Symbol libParseSymbol = libParser.parse();
 				libRoot = (ICClass) libParseSymbol.value;
 				System.out.println("Parsed " + libFile.getName() +" successfully!");
-				
-			// Pretty-print the program to System.out
-			//	PrettyPrinter printer = new PrettyPrinter(args[1].substring(2));
-			//	System.out.println(printer.visit(libRoot));
+
 			}
 
 			//parse IC file
@@ -49,9 +47,15 @@ public class Compiler {
 
 			Symbol parseSymbol = parser.parse();
 			Program ICRoot = (Program) parseSymbol.value;
-			if (libRoot != null)
-				ICRoot.getClasses().add(0, libRoot);
 			
+			if (libRoot != null) { 
+				if(!libRoot.getName().equals(LIB_NAME)) { //Make sure that the library class has the correct name
+					(new SemanticErrorThrower(1, "Library class has incorrect name: "+libRoot.getName()+ ", expected "+LIB_NAME+".")).execute();
+				} else {
+					ICRoot.getClasses().add(0, libRoot); //append the library
+				}
+			}
+
 			System.out.println("Parsed " + icFile.getName() +" successfully!");
 			System.out.println();
 
@@ -59,21 +63,21 @@ public class Compiler {
 			typeTableBuilder.buildTypeTable(ICRoot);
 			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), icFile.getName());
 			s.buildSymbolTables(ICRoot);
-			s.getSymbolTable().printTable();
-			typeTableBuilder.getBuiltTypeTable().printTable();
-			
-			//Pretty-print the program to System.out
-			PrettyPrinter printer = new PrettyPrinter(args[0]);
-		//	System.out.println(printer.visit(ICRoot));
-			//validates that all the return values are correct
-			//ReturnValidator rv = new ReturnValidator();
-			//ICRoot.accept(rv);
-			
-			//validates that all the types are correct
-	//		TypeValidator tv = new TypeValidator();
-		//	ICRoot.accept(tv);
-			
 
+			TypeValidator tv = new TypeValidator();
+			ICRoot.accept(tv);
+
+			if(isInArgs(args, "-print-ast")) {
+				//Pretty-print the program to System.out
+				PrettyPrinter printer = new PrettyPrinter(args[0]);
+				System.out.println(printer.visit(ICRoot));
+			}
+			
+			if(isInArgs(args, "-dump-symtab")) {
+				s.getSymbolTable().printTable();
+				typeTableBuilder.getBuiltTypeTable().printTable();
+			}
+			
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
 		} catch (LexicalError e) {
@@ -85,5 +89,19 @@ public class Compiler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static String getLibraryArgument(String args[]) {
+		for (int i=0; i<args.length; i++)
+			if(args[i].substring(0, 2).equals("-L"))
+				return args[i].substring(2);
+		return null;
+	}
+	
+	private static boolean isInArgs(String args[], String arg) {
+		for (int i=0; i<args.length; i++)
+			if(args[i].equals(arg))
+				return true;
+		return false;
 	}
 }
