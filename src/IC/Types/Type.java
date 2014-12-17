@@ -10,13 +10,17 @@ public abstract class Type {
 		this.name=name;
 	}
 	
-	public abstract boolean nullAssignable();
-	public abstract boolean nullComparable();
-	public abstract Type clone();
 	public boolean subTypeOf(Type t)
 	{
-		if(this.name.compareTo(t.name)==0)
+		if (this.equals(t))
 			return true;
+		if ((this.isNullType()) && (t.isClassType()))
+			return true;
+		if (this.isClassType()) {
+			ClassType classType = (ClassType)this;
+			if (classType.hasSuperClass())
+				return classType.getSuperClassType().subTypeOf(t);
+		}
 		return false;
 	}
 	
@@ -48,6 +52,15 @@ public abstract class Type {
 		return (this instanceof NullType);
 	}
 	
+	public boolean isNullAssignable() {
+		if ((this.isClassType()) || (this.isArrayType()) || (this.isStringType()))
+			return true;
+		if (this instanceof MethodType) {
+			MethodType methodType = (MethodType)this;
+			return methodType.returnType.isNullAssignable();
+		}
+		return false;
+	}
 	public String getName()
 	{
 		return this.name;
@@ -64,24 +77,6 @@ class IntType extends Type
 	public String toString() {
 		return "int";
 	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return false;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-	@Override
-	public Type clone() {
-		Type other = new IntType();
-		other.name=this.name;
-		return other;
-	}
 }
 
 class BoolType extends Type 
@@ -94,23 +89,6 @@ class BoolType extends Type
 	@Override
 	public String toString() {
 		return "boolean";
-	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return false;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	@Override
-	public Type clone() {
-		Type other = new BoolType();
-		other.name=this.name;
-		return other;
 	}
 }
 
@@ -125,22 +103,6 @@ class NullType extends Type
 	public String toString() {
 		return "null";
 	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return true;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		return true;
-	}
-	@Override
-	public Type clone() {
-		Type other = new NullType();
-		other.name=this.name;
-		return other;
-	}
 }
 
 class StringType extends Type 
@@ -154,22 +116,6 @@ class StringType extends Type
 	public String toString() {
 		return "string";
 	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return true;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		return true;
-	}
-	@Override
-	public Type clone() {
-		Type other = new StringType();
-		other.name=this.name;
-		return other;
-	}
 }
 
 class VoidType extends Type 
@@ -182,23 +128,6 @@ class VoidType extends Type
 	@Override
 	public String toString() {
 		return "void";
-	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return false;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		return true;
-	}
-	
-	@Override
-	public Type clone() {
-		Type other = new VoidType();
-		other.name=this.name;
-		return other;
 	}
 }
 
@@ -218,24 +147,6 @@ class ArrayType extends Type
 	
 	public Type getElemType() {
 		return elemType;
-	}
-
-	@Override
-	public boolean nullAssignable() {
-		return true;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		// TODO Auto-generated method stub
-		return true;
-	}
-	
-	@Override
-	public Type clone() {
-		Type other = new ArrayType(this.elemType);
-		other.name=this.name;
-		return other;
 	}
 }
 
@@ -261,68 +172,34 @@ class MethodType extends Type
 		}
 		return paramTypesStr + " -> " + returnType.toString();
 	}
-	
-	@Override
-	public boolean nullAssignable() {
-		System.out.println("Type file = "+ returnType.name);
-		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
-	}
-
-	@Override
-	public boolean nullComparable() {
-		return returnType.name.equals("string") || returnType.name.equals("ArrayType") || returnType.name.equals("ClassType");
-	}
-	
-	@Override
-	public Type clone() {
-		Type other = new MethodType(this.paramTypes,this.returnType);
-		other.name=this.name;
-		return other;
-	}
 }
 
 class ClassType extends Type 
 {   
-	ICClass classAST;
-	String superClass;
+	ClassType superClassType;
+	String clsName;
 
-
-	public ClassType(ICClass classAST)
+	public ClassType(String clsName, ClassType superClassType)
 	{
 		super("ClassType");
-		this.classAST = classAST;
-		this.superClass = null;
-		if (classAST.hasSuperClass())
-			this.superClass = classAST.getSuperClassName();
+		this.clsName = clsName;
+		this.superClassType = superClassType;
 	}
 	
-	public String getSuperClassName() {
-		return superClass;
+	public ClassType getSuperClassType() {
+		return superClassType;
 	}
 
 	public Boolean hasSuperClass() {
-		return (superClass != null);
+		return (superClassType != null);
+	}
+	
+	public String getClassName() {
+		return this.clsName;
 	}
 	
 	@Override
 	public String toString() {
-		return classAST.getName();
-	}
-	
-	@Override
-	public boolean nullAssignable() {
-		return true;
-	}
-
-	@Override
-	public boolean nullComparable() {
-		return true;
-	}
-	
-	@Override
-	public Type clone() {
-		Type other = new ClassType(this.classAST);
-		other.name=this.name;
-		return other;
+		return clsName;
 	}
 }

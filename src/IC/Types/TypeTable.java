@@ -80,7 +80,8 @@ public class TypeTable {
 		for (Map.Entry<String,ClassType> entry : sorted_uniqueClassTypes) {
 			System.out.print("    " + values.get(entry.getValue()) + ": Class: " + entry.getValue().toString());
 			if (entry.getValue().hasSuperClass())
-				System.out.print(", Superclass ID: " + values.get(uniqueClassTypes.get(entry.getValue().getSuperClassName())));
+				System.out.print(", Superclass ID: " + values.get(uniqueClassTypes.get(
+						entry.getValue().getSuperClassType().getClassName())));
 			System.out.println();
 		}
 		
@@ -138,13 +139,16 @@ public class TypeTable {
 	 * @return false if and only if the class is extending a class which dosen't exist
 	 */
 	public Boolean addClassType(ICClass classAST) {
-		if (uniqueClassTypes.containsKey(classAST))
+		if (uniqueClassTypes.containsKey(classAST.getName()))
 			return true;
-		ClassType clst = new ClassType(classAST);
-		if (clst.hasSuperClass()) {
-			if (!uniqueClassTypes.containsKey(clst.getSuperClassName()))
+		ClassType superClassType = null;
+		if (classAST.hasSuperClass()) {
+			if (!uniqueClassTypes.containsKey(classAST.getSuperClassName()))
 				return false;
+			superClassType = uniqueClassTypes.get(classAST.getSuperClassName());
 		}
+		ClassType clst = new ClassType(classAST.getName(), superClassType);
+
 		uniqueClassTypes.put(classAST.getName(), clst);
 		values.put(clst, idCounter);
 		idCounter++;

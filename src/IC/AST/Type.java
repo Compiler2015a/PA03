@@ -39,8 +39,4 @@ public abstract class Type extends ASTNode {
 	public void decrementDimension() {
 		--dimension;
 	}
-	
-	public abstract boolean nullAssignable();
-	public abstract boolean nullComparable();
-	public abstract Type clone();
 }

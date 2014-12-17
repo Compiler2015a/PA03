@@ -63,28 +63,21 @@ public class TypeValidator implements Visitor{
 	}
 
 	@Override
-	public Object visit(PrimitiveType type) { // TODO: !
-		switch(type.getName())
-		{
-		case "int":return new IntType();
-		case "boolean":return new BoolType();
-		case "string":return new StringType();
-		case "void":return new VoidType();
-		}
-		return new NullType();
+	public Object visit(PrimitiveType type) { 
+		return null;
 	}
 
 	@Override
 	public Object visit(UserType type) {
-		return type;
+		return null;
 	}
 	
-	private boolean isTypeAssignmentValid(IC.AST.Type typeTo, Type typeFrom, SymbolTable scope) {
+	private boolean isTypeAssignmentValid(Type typeTo, Type typeFrom, SymbolTable scope) {
 		// check if type can be assigned null
-		if (typeTo.nullAssignable() && typeFrom.isVoidType()) 
+		if (typeTo.isNullAssignable() && typeFrom.isNullType()) 
 			return true;
 		// check if the types are equal
-		if (typeTo.getName().equals(typeFrom.toString())) 
+		if (typeTo.equals(typeFrom)) 
 			return true;
 		// check hierarchy (don't allow object array subtyping)
 		if (scope.isTypeOf(typeTo.getName(), typeFrom.getName()) &&
@@ -200,7 +193,7 @@ public class TypeValidator implements Visitor{
 			Type type = (Type)localVariable.getInitValue().accept(this);
 			if (type == null) 
 				throw new TypeException("Initializing value must be of non-void type", localVariable.getLine());
-			if (isTypeAssignmentValid(localVariable.getType(), type, localVariable.getSymbolsTable()) == false) {
+			if (isTypeAssignmentValid(localVariable.getEntryType(), type, localVariable.getSymbolsTable()) == false) {
 				throw new TypeException("Value assigned to local variable type mismatch", localVariable.getLine());
 			} 
 		}
@@ -253,7 +246,7 @@ public class TypeValidator implements Visitor{
 					call.getName()), call.getLine());
 		}
 		
-		return symFromST.getType().equals("void") ? null : symFromST.getType();
+		return symFromST.getType().equals("void") ? null : symFromST.getType(); // TODO ???
 	}
 
 	@Override
@@ -295,7 +288,7 @@ public class TypeValidator implements Visitor{
 		}
 		
 		
-		return symFromST.getType().equals("void") ? null : symFromST.getType();
+		return symFromST.getType().equals("void") ? null : symFromST.getType(); // TODO ???
 	}
 
 	@Override
@@ -320,11 +313,10 @@ public class TypeValidator implements Visitor{
 	public Object visit(NewArray newArray) {
 		Type typeSize = (Type)newArray.getSize().accept(this);
 		
-		Type typeArray = (Type)newArray.getType().accept(this);
 		if (typeSize == null || !typeSize.isIntType())
 			throw new TypeException("Array size must be an integer", newArray.getLine());
-		Type typeReturned = typeArray.clone();
-		return typeReturned;
+
+		return newArray.getEntryType();
 	}
 
 	@Override
@@ -382,13 +374,19 @@ public class TypeValidator implements Visitor{
 			case NEQUAL:
 				if (typeFirst == typeSecond)
 					return binaryOp.getEntryType();
-				if (typeFirst.nullComparable() && typeSecond.isVoidType()) // TODO ?????
+				if (typeFirst.isNullAssignable() && typeSecond.isVoidType()) // TODO ?????
 					return binaryOp.getEntryType();
-				if (typeFirst.isVoidType() && typeSecond.nullComparable()) 
+				if (typeFirst.isVoidType() && typeSecond.isNullAssignable()) 
 					return binaryOp.getEntryType();
-				if ((typeFirst.nullComparable()) && (typeSecond.isNullType()))
+				if ((typeFirst.isNullAssignable()) && (typeSecond.isNullType()))
 					return binaryOp.getEntryType();
-				if ((typeFirst.isNullType()) && (typeSecond.nullComparable()))
+				if ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
+					return binaryOp.getEntryType();
+				if ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
+					return binaryOp.getEntryType();
+				if ((typeFirst.subTypeOf(typeSecond)))
+					return binaryOp.getEntryType();
+				if ((typeSecond.subTypeOf(typeFirst)))
 					return binaryOp.getEntryType();
 				onWhat = "not-fitting";
 				opType = "logical";
