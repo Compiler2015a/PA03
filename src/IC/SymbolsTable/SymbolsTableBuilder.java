@@ -242,6 +242,12 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
+		if (localVariable.hasInitValue()) {
+			localVariable.getInitValue().setSymbolsTable(localVariable.getSymbolsTable());
+			if (!(Boolean)localVariable.getInitValue().accept(this))
+				return false;
+		}
+		
 		IC.Types.Type localVarType = typeTable.getTypeFromASTTypeNode(localVariable.getType());
 		if (!addEntryAndCheckDuplication(localVariable.getSymbolsTable(), 
 				new SymbolEntry(localVariable.getName(), localVarType, IDSymbolsKinds.VARIABLE))) {
@@ -252,13 +258,6 @@ public class SymbolsTableBuilder implements Visitor {
 		}
 		
 		localVariable.setEntryType(localVarType);
-		
-		if (localVariable.hasInitValue()) {
-			localVariable.getInitValue().setSymbolsTable(localVariable.getSymbolsTable());
-			if (!(Boolean)localVariable.getInitValue().accept(this))
-				return false;
-		}
-		
 		return true;
 	}
 

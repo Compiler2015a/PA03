@@ -137,11 +137,17 @@ public class TypeTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(If ifStatement) {
+		ifStatement.getOperation().accept(this);
+		if (ifStatement.hasElse())
+			ifStatement.getElseOperation().accept(this);
+		
 		return null;
 	}
 
 	@Override
 	public Object visit(While whileStatement) {
+		whileStatement.getOperation().accept(this);
+		
 		return null;
 	}
 
