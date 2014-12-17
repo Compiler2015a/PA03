@@ -449,8 +449,10 @@ public class TypeValidator implements Visitor{
 		switch(binaryOp.getOperator()) {
 	case PLUS:
 		if ((typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-				|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) 
+				|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) {
+				binaryOp.setEntryType(typeFirst);
 				return typeFirst;
+		}
 		onWhat = "non-integer or non-string";
 		opType = "arithmetic";
 		break;

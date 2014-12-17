@@ -75,7 +75,7 @@ public class Compiler {
 			if(isInArgs(args, "-print-ast")) {
 				//Pretty-print the program to System.out
 				PrettyPrinter printer = new PrettyPrinter(args[0]);
-				//System.out.println(printer.visit(ICRoot));
+				System.out.println(printer.visit(ICRoot));
 			}
 			
 			if(isInArgs(args, "-dump-symtab")) {
