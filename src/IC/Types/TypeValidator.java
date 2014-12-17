@@ -25,12 +25,8 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(ICClass icClass) {
-		
-		
-		for (Method method : icClass.getMethods()) {
-			
+		for (Method method : icClass.getMethods()) 
 			method.accept(this);
-		}
 		
 		return null;
 	}
@@ -41,14 +37,12 @@ public class TypeValidator implements Visitor{
 	}
 	
 	public Object visitMethod(Method method) {
-		
-		for (Formal formal : method.getFormals()) {
+		for (Formal formal : method.getFormals()) 
 			formal.accept(this);
 				
-		}
-		for (Statement statement : method.getStatements()) {
+		for (Statement statement : method.getStatements()) 
 			statement.accept(this);
-		}
+
 		return null;
 	}
 
@@ -73,7 +67,7 @@ public class TypeValidator implements Visitor{
 	}
 
 	@Override
-	public Object visit(PrimitiveType type) {
+	public Object visit(PrimitiveType type) { // TODO: !
 		switch(type.getName())
 		{
 		case "int":return new IntType();
@@ -143,7 +137,7 @@ public class TypeValidator implements Visitor{
 				typeExpected=typeExpected.substring(x.getType().toString().indexOf("->")+3);
 			}
 		}
-		if (typeInFact.toString().equals(typeExpected) == false)
+		if (!typeInFact.toString().equals(typeExpected))
 			throw new TypeException(String.format(
 					"Return statement is not of type %s", typeExpected), returnStatement.getLine());
 			
@@ -153,7 +147,7 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(If ifStatement) {
 		Type typeCondition = (Type)ifStatement.getCondition().accept(this);
-		if (typeCondition == null || typeCondition.getName().equals("BoolType") == false)
+		if (typeCondition == null || !typeCondition.getName().equals("BoolType"))
 			throw new TypeException("Non boolean condition for if statement", ifStatement.getLine());
 		ifStatement.getOperation().accept(this);
 		if (ifStatement.hasElse())
@@ -339,8 +333,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Length length) {
-	
-		return new IntType();
+		return length.getEntryType();
 	}
 
 	@Override
@@ -355,10 +348,12 @@ public class TypeValidator implements Visitor{
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
-		case LNEG:
-			if (type.getName().equals("BoolType"))
-				return new BoolType();
-			break;
+			case LNEG:
+				if (type.getName().equals("BoolType"))
+					return type;
+				break;
+			default:
+				break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
 	}
@@ -419,20 +414,20 @@ public class TypeValidator implements Visitor{
 		Type type = (Type)unaryOp.getOperand().accept(this);
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
-		switch(unaryOp.getOperator()) {
-		case UMINUS:
-			if (type.getName().equals("IntType"))
-				return new IntType();
-			break;
+			switch(unaryOp.getOperator()) {
+			case UMINUS:
+				if (type.getName().equals("IntType"))
+					return type;
+				break;
+			default:
+				break;
 		}
 		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
 	}
 
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
-		// TODO Auto-generated method stub
-		System.out.println("$112\n");
-		return null;
+		return (Type)expressionBlock.getExpression().accept(this);
 	}
 
 
@@ -447,24 +442,26 @@ public class TypeValidator implements Visitor{
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
-	case PLUS:
-		if ((typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-				|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) {
-				binaryOp.setEntryType(typeFirst);
-				return typeFirst;
-		}
-		onWhat = "non-integer or non-string";
-		opType = "arithmetic";
-		break;
-	case MINUS:
-	case MULTIPLY:
-	case DIVIDE:
-	case MOD:
-		if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-			return typeFirst;
-		onWhat = "non-integer";
-		opType = "arithmetic";
-		break;
+			case PLUS:
+				if ((typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+						|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) {
+						binaryOp.setEntryType(typeFirst);
+						return typeFirst;
+				}
+				onWhat = "non-integer or non-string";
+				opType = "arithmetic";
+				break;
+			case MINUS:
+			case MULTIPLY:
+			case DIVIDE:
+			case MOD:
+				if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+					return typeFirst;
+				onWhat = "non-integer";
+				opType = "arithmetic";
+				break;
+				default:
+					break;
 		}
 		throw new TypeException(String.format("Invalid %s binary op (%s) on %s expression",
 				opType, binaryOp.getOperator().toString(),
