@@ -220,14 +220,9 @@ public class TypeTable {
 		return (ArrayType)currArrType;
 	}
 	
-	public Type getTypeFromArray(Type arrayType) {
-		Type primitive = arrayType;
-		while (primitive.isArrayType()) {
-			ArrayType tempArrayType = (ArrayType)primitive;
-			primitive = tempArrayType.getElemType();
-		}
-
-		return primitive;
+	public Type getTypeFromArray(Type type) {
+		ArrayType arrayType = (ArrayType)type;
+		return arrayType.getElemType();
 	}
 	
 	private MethodType generateMethodType(Method method) {

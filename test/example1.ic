@@ -5,7 +5,7 @@ class A {
   static int sfunc(boolean b) {
     if (b) {
       {
-        int k = 5;
+		int[] l;
       }
       return 1;
     }

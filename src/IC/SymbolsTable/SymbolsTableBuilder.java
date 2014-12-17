@@ -399,6 +399,9 @@ public class SymbolsTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(Length length) {
+		length.getArray().setSymbolsTable(length.getSymbolsTable());
+		if (!(Boolean)length.getArray().accept(this))
+			return false;
 		length.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
 		return true;
 	}

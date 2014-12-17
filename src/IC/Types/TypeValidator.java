@@ -321,6 +321,9 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Length length) {
+		Type type = (Type)length.getArray().accept(this);
+		if (!type.isArrayType())
+			throw new TypeException("Length expression must have an array type", length.getLine());
 		return length.getEntryType();
 	}
 
