@@ -372,15 +372,9 @@ public class TypeValidator implements Visitor{
 				break;
 			case EQUAL:
 			case NEQUAL:
-				if (typeFirst == typeSecond)
-					return binaryOp.getEntryType();
-				if (typeFirst.isNullAssignable() && typeSecond.isVoidType()) // TODO ?????
-					return binaryOp.getEntryType();
-				if (typeFirst.isVoidType() && typeSecond.isNullAssignable()) 
+				if (typeFirst.equals(typeSecond))
 					return binaryOp.getEntryType();
 				if ((typeFirst.isNullAssignable()) && (typeSecond.isNullType()))
-					return binaryOp.getEntryType();
-				if ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
 					return binaryOp.getEntryType();
 				if ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
 					return binaryOp.getEntryType();
