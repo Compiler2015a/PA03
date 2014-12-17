@@ -1,3 +1,5 @@
+class Test1 { }
+class Test2 extends Test1 { }
 class A {
   string str;
   int i;
@@ -6,6 +8,9 @@ class A {
     if (b) {
       {
         int k = 5;
+		Test1 test1 = new Test1();
+		Test2 test2 = new Test2();
+		boolean s1 = test1 != test2;
       }
       return 1;
     }

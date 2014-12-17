@@ -1,10 +1,6 @@
 package IC.Types;
 
-import java.util.ArrayList;
-import java.util.List;
 
-import IC.DataTypes;
-import IC.LiteralTypes;
 import IC.AST.*;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.IDSymbolsKinds;
@@ -85,7 +81,7 @@ public class TypeValidator implements Visitor{
 	
 	private boolean isTypeAssignmentValid(IC.AST.Type typeTo, Type typeFrom, SymbolTable scope) {
 		// check if type can be assigned null
-		if (typeTo.nullAssignable() && typeFrom.getName().equals("VoidType")) 
+		if (typeTo.nullAssignable() && typeFrom.isVoidType()) 
 			return true;
 		// check if the types are equal
 		if (typeTo.getName().equals(typeFrom.toString())) 
@@ -147,7 +143,7 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(If ifStatement) {
 		Type typeCondition = (Type)ifStatement.getCondition().accept(this);
-		if (typeCondition == null || !typeCondition.getName().equals("BoolType"))
+		if (typeCondition == null || !typeCondition.isBoolType())
 			throw new TypeException("Non boolean condition for if statement", ifStatement.getLine());
 		ifStatement.getOperation().accept(this);
 		if (ifStatement.hasElse())
@@ -161,7 +157,7 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(While whileStatement) {
 		Type typeCondition = (Type)whileStatement.getCondition().accept(this);
-		if (typeCondition == null || typeCondition.getName().equals("BoolType") == false)
+		if (typeCondition == null || !typeCondition.isBoolType())
 			throw new TypeException("Non boolean condition for while statement", whileStatement.getLine());
 		loopNesting++;
 		whileStatement.getOperation().accept(this);
@@ -231,7 +227,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(ArrayLocation location) {
 		Type typeIndex = (Type)location.getIndex().accept(this);
 		Type typeArray = location.getEntryType();
-		if (typeIndex == null || typeIndex.getName().equals("IntType") == false)
+		if (typeIndex == null || !typeIndex.isIntType())
 			throw new TypeException("Array index must be an integer", location.getLine());
 		if (typeArray == null)
 			throw new TypeException("Array type must be of non-void type", location.getLine());
@@ -325,7 +321,7 @@ public class TypeValidator implements Visitor{
 		Type typeSize = (Type)newArray.getSize().accept(this);
 		
 		Type typeArray = (Type)newArray.getType().accept(this);
-		if (typeSize == null || typeSize.getName().equals("IntType") == false)
+		if (typeSize == null || !typeSize.isIntType())
 			throw new TypeException("Array size must be an integer", newArray.getLine());
 		Type typeReturned = typeArray.clone();
 		return typeReturned;
@@ -344,12 +340,12 @@ public class TypeValidator implements Visitor{
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
 	
-		IC.AST.Type type = (IC.AST.Type)unaryOp.getOperand().accept(this);
+		Type type = (Type)unaryOp.getOperand().accept(this);
 		if (type == null)
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 		switch(unaryOp.getOperator()) {
 			case LNEG:
-				if (type.getName().equals("BoolType"))
+				if (type.isBoolType())
 					return type;
 				break;
 			default:
@@ -368,7 +364,7 @@ public class TypeValidator implements Visitor{
 		switch(binaryOp.getOperator()) {
 			case LAND:
 			case LOR:
-				if (typeFirst.getName().equals("BoolType") && typeSecond.getName().equals("BoolType")) 
+				if (typeFirst.isBoolType() && typeSecond.isBoolType()) 
 					return binaryOp.getEntryType();
 				onWhat = "non-boolean";
 				opType = "logical";
@@ -377,7 +373,7 @@ public class TypeValidator implements Visitor{
 			case LTE:
 			case GT:
 			case GTE:
-				if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+				if (typeFirst.isIntType() && typeSecond.isIntType()) 
 					return binaryOp.getEntryType();
 				onWhat = "non-integer";
 				opType = "logical";
@@ -386,13 +382,13 @@ public class TypeValidator implements Visitor{
 			case NEQUAL:
 				if (typeFirst == typeSecond)
 					return binaryOp.getEntryType();
-				if (typeFirst.nullComparable() && typeSecond.getName().equals("void")) // TODO ?????
+				if (typeFirst.nullComparable() && typeSecond.isVoidType()) // TODO ?????
 					return binaryOp.getEntryType();
-				if (typeFirst.getName().equals("void") && typeSecond.nullComparable()) 
+				if (typeFirst.isVoidType() && typeSecond.nullComparable()) 
 					return binaryOp.getEntryType();
-				if ((typeFirst.nullComparable()) && (typeSecond.getName().equals("NullType")))
+				if ((typeFirst.nullComparable()) && (typeSecond.isNullType()))
 					return binaryOp.getEntryType();
-				if ((typeFirst.getName().equals("NullType")) && (typeSecond.nullComparable()))
+				if ((typeFirst.isNullType()) && (typeSecond.nullComparable()))
 					return binaryOp.getEntryType();
 				onWhat = "not-fitting";
 				opType = "logical";
@@ -416,7 +412,7 @@ public class TypeValidator implements Visitor{
 			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
 			switch(unaryOp.getOperator()) {
 			case UMINUS:
-				if (type.getName().equals("IntType"))
+				if (type.isIntType())
 					return type;
 				break;
 			default:
@@ -443,8 +439,8 @@ public class TypeValidator implements Visitor{
 		String opType = "";
 		switch(binaryOp.getOperator()) {
 			case PLUS:
-				if ((typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
-						|| (typeFirst.getName().equals("StringType") && typeSecond.getName().equals("StringType"))) {
+				if ((typeFirst.isIntType() && typeSecond.isIntType()) 
+						|| (typeFirst.isStringType() && typeSecond.isStringType())) {
 						binaryOp.setEntryType(typeFirst);
 						return typeFirst;
 				}
@@ -455,7 +451,7 @@ public class TypeValidator implements Visitor{
 			case MULTIPLY:
 			case DIVIDE:
 			case MOD:
-				if (typeFirst.getName().equals("IntType") && typeSecond.getName().equals("IntType")) 
+				if (typeFirst.isIntType() && typeSecond.isIntType()) 
 					return typeFirst;
 				onWhat = "non-integer";
 				opType = "arithmetic";

@@ -28,6 +28,26 @@ public abstract class Type {
 		return (this instanceof ArrayType);
 	}
 	
+	public boolean isIntType() {
+		return (this instanceof IntType);
+	}
+	
+	public boolean isStringType() {
+		return (this instanceof StringType);
+	}
+	
+	public boolean isBoolType() {
+		return (this instanceof BoolType);
+	}
+	
+	public boolean isVoidType() {
+		return (this instanceof VoidType);
+	}
+	
+	public boolean isNullType() {
+		return (this instanceof NullType);
+	}
+	
 	public String getName()
 	{
 		return this.name;

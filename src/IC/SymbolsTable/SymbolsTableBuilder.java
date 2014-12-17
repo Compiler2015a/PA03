@@ -380,7 +380,7 @@ public class SymbolsTableBuilder implements Visitor {
 			return false;
 		}
 		
-		newClass.setEntryType(clsSymbolTable.getParentSymbolTable().getEntry(newClass.getName()).getType());
+		newClass.setEntryType(rootSymbolTable.getEntry(newClass.getName()).getType());
 		return true;
 	}
 

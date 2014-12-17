@@ -45,7 +45,7 @@ public class Compiler {
 			Lexer scanner = new Lexer(icFileReader);
 			Parser parser = new Parser(scanner);
 
-			Symbol parseSymbol = parser.parse();
+			Symbol parseSymbol = parser.parse(); // TODO right now: keeps running after exception!!!
 			Program ICRoot = (Program) parseSymbol.value;
 			
 			if (libRoot != null) { 
