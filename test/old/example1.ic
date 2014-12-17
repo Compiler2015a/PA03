@@ -6,6 +6,7 @@ class A {
     if (b) {
       {
         int k = 5;
+		k = 3;
       }
       return 1;
     }
@@ -19,7 +20,7 @@ class A {
 
   void vfunc(A a, int max, int val) {
     int[] arr = new int[max];
-    int i = 0;
+    int i = 0 ;
     while (i < max){
         arr[i] = val;
         i = i + 1;
