@@ -61,7 +61,7 @@ public class Compiler {
 
 			TypeTableBuilder typeTableBuilder = new TypeTableBuilder(icFile.getName());
 			typeTableBuilder.buildTypeTable(ICRoot);
-			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), icFile.getName());
+			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), "Global");
 			s.buildSymbolTables(ICRoot);
 
 			TypeValidator tv = new TypeValidator();
