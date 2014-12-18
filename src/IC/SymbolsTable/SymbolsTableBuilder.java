@@ -3,7 +3,6 @@ package IC.SymbolsTable;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import IC.DataTypes;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.Types.*;
@@ -294,9 +293,6 @@ public class SymbolsTableBuilder implements Visitor {
 		location.getArray().setSymbolsTable(location.getSymbolsTable());
 		if (!(Boolean)location.getArray().accept(this))
 			return false;
-		
-
-		location.setEntryType(typeTable.getTypeFromArray(location.getArray().getEntryType()));
 
 		location.getIndex().setSymbolsTable(location.getSymbolsTable());
 		if (!(Boolean)location.getIndex().accept(this))
@@ -319,7 +315,6 @@ public class SymbolsTableBuilder implements Visitor {
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-		call.setEntryType(methodEntry.getType());
 		
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
@@ -347,7 +342,7 @@ public class SymbolsTableBuilder implements Visitor {
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-		call.setEntryType(methodEntry.getType());
+
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))
@@ -365,7 +360,6 @@ public class SymbolsTableBuilder implements Visitor {
 		
 		bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
 		this.currentClassSymbolTablePoint = bottomSymbolTable;
-		thisExpression.setEntryType(this.currentClassSymbolTablePoint.getParentSymbolTable().getEntry(bottomSymbolTable.getId()).getType());
 		
 		return true;
 	}
@@ -379,7 +373,6 @@ public class SymbolsTableBuilder implements Visitor {
 			return false;
 		}
 		
-		newClass.setEntryType(rootSymbolTable.getEntry(newClass.getName()).getType());
 		return true;
 	}
 
@@ -388,12 +381,7 @@ public class SymbolsTableBuilder implements Visitor {
 		newArray.getSize().setSymbolsTable(newArray.getSymbolsTable());
 		if (!(Boolean)newArray.getSize().accept(this))
 			return false;
-		if (newArray.getType() instanceof PrimitiveType)
-			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getPrimitiveType(newArray.getType().getName()), 
-					newArray.getType().getDimension()));
-		if (newArray.getType() instanceof UserType)
-			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getClassType(newArray.getType().getName()), 
-					newArray.getType().getDimension()));
+
 		return true;
 	}
 
@@ -402,7 +390,7 @@ public class SymbolsTableBuilder implements Visitor {
 		length.getArray().setSymbolsTable(length.getSymbolsTable());
 		if (!(Boolean)length.getArray().accept(this))
 			return false;
-		length.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
+		
 		return true;
 	}
 
@@ -427,7 +415,6 @@ public class SymbolsTableBuilder implements Visitor {
 		if(!(Boolean)binaryOp.getSecondOperand().accept(this))
 			return false;
 		
-		binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
 		return true;
 	}
 
@@ -437,7 +424,6 @@ public class SymbolsTableBuilder implements Visitor {
 		if(!(Boolean)unaryOp.getOperand().accept(this))
 			return false;
 		
-		unaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
 		return true;
 	}
 
@@ -447,13 +433,11 @@ public class SymbolsTableBuilder implements Visitor {
 		if(!(Boolean)unaryOp.getOperand().accept(this))
 			return false;
 		
-		unaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
 		return true;
 	}
 
 	@Override
 	public Object visit(Literal literal) {
-		literal.setEntryType(typeTable.getLiteralType(literal.getType().getDescription()));
 		return true;
 	}
 
@@ -462,7 +446,7 @@ public class SymbolsTableBuilder implements Visitor {
 		expressionBlock.getExpression().setSymbolsTable(expressionBlock.getSymbolsTable());
 		if (!(Boolean)expressionBlock.getExpression().accept(this))
 			return false;
-		expressionBlock.setEntryType(expressionBlock.getExpression().getEntryType());
+
 		return true;
 	}
 	
@@ -506,25 +490,27 @@ public class SymbolsTableBuilder implements Visitor {
 	}
 	
 	private SymbolEntry getVariableSymbolEntry(String name, SymbolTable bottomSymbolTable) {
-		while (bottomSymbolTable.getId().contains("block#")) {
+		if ((bottomSymbolTable.getTableType() == SymbolTableTypes.METHOD) || 
+				(bottomSymbolTable.getTableType() == SymbolTableTypes.STATEMENT_BLOCK)) {
+			while (bottomSymbolTable.getId().contains("block#")) {
+				if (bottomSymbolTable.hasEntry(name))
+					return bottomSymbolTable.getEntry(name);
+				bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
+			}
+			
+			// Checking method table:
 			if (bottomSymbolTable.hasEntry(name))
 				return bottomSymbolTable.getEntry(name);
+			
+			String containigMethodName = bottomSymbolTable.getId();
 			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
+			if (bottomSymbolTable.getEntry(containigMethodName).getKind() == 
+					IDSymbolsKinds.STATIC_METHOD)
+				return null;
 		}
 		
-		// Checking method table:
-		if (bottomSymbolTable.hasEntry(name))
-			return bottomSymbolTable.getEntry(name);
-		
-		String containigMethodName = bottomSymbolTable.getId();
-		bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
-		
-		if (bottomSymbolTable.getEntry(containigMethodName).getKind() == 
-				IDSymbolsKinds.STATIC_METHOD)
-			return null;
-		
 		// Checking class tables:
-		while (!bottomSymbolTable.getId().equals("globals#")) {
+		while (bottomSymbolTable.getTableType() != SymbolTableTypes.GLOBAL) {
 			SymbolTable clsTable = bottomSymbolTable;
 			if (clsTable.hasEntry(name))
 				if (clsTable.getEntry(name).getKind() == IDSymbolsKinds.FIELD)

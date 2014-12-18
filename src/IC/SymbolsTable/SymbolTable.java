@@ -30,32 +30,18 @@ public class SymbolTable {
 	    this.parentSymbolTable = null;
 	  }
 
+
 	  public String getId() {
 		return id;
 	  }
 	  
-	  public IDSymbolsKinds getType()
-	  {
-		  return parentSymbolTable.entries.get(id).getKind();
-	  }
-	  
-	  public boolean isTypeOf(String ancestor, String descendant) {
-			SymbolTable table = this;
-			while (table.parentSymbolTable != null)
-				table = table.parentSymbolTable;
-			SymbolTable scopeAncestor = table.getClassScope(ancestor);
-			if (scopeAncestor == null)
-				return false;
-			SymbolTable scopeDescendant = scopeAncestor.getClassScope(descendant);
-			if (scopeDescendant == null)
-				return false;
-			return true;
-			
-		}
-	  
 	  public Map<String,SymbolEntry> getEntries()
 	  {
 		  return this.entries;
+	  }
+	  
+	  public SymbolTableTypes getTableType() {
+		return tableType;
 	  }
 	  
 	  public SymbolTable getClassScope(String className) {

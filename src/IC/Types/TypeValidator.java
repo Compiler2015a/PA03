@@ -1,7 +1,9 @@
 package IC.Types;
 
 
+import IC.DataTypes;
 import IC.AST.*;
+import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.IDSymbolsKinds;
 import IC.SymbolsTable.SymbolEntry;
@@ -10,36 +12,52 @@ import IC.SymbolsTable.SymbolTable;
 public class TypeValidator implements Visitor{
 
 	private int loopNesting;
+	private TypeTable typeTable;
+	private SemanticErrorThrower semanticErrorThrower;
+	
+	public TypeValidator(TypeTable typeTable) {
+		this.typeTable = typeTable;
+	}
+	
+	public void validate(Program program) throws SemanticError {
+		if (!(Boolean)program.accept(this))
+			this.semanticErrorThrower.execute();
+	}
+	
 	@Override
 	public Object visit(Program program) {
 		loopNesting = 0;
 		for (ICClass cls : program.getClasses()) {
-			cls.accept(this);
+			if (!(Boolean)cls.accept(this))
+				return false;
 		}
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(ICClass icClass) {
 		for (Method method : icClass.getMethods()) 
-			method.accept(this);
+			if (!(Boolean)method.accept(this))
+				return false;
 		
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(Field field) {
-		return null;
+		return true;
 	}
 	
 	public Object visitMethod(Method method) {
 		for (Formal formal : method.getFormals()) 
-			formal.accept(this);
+			if (!(Boolean)formal.accept(this))
+				return false;
 				
 		for (Statement statement : method.getStatements()) 
-			statement.accept(this);
+			if (!(Boolean)statement.accept(this))
+				return false;
 
-		return null;
+		return true;
 	}
 
 	@Override
@@ -59,57 +77,54 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Formal formal) {
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(PrimitiveType type) { 
+		// Not called
 		return null;
 	}
 
 	@Override
 	public Object visit(UserType type) {
+		// Not called
 		return null;
-	}
-	
-	private boolean isTypeAssignmentValid(Type typeTo, Type typeFrom, SymbolTable scope) {
-		// check if type can be assigned null
-		if (typeTo.isNullAssignable() && typeFrom.isNullType()) 
-			return true;
-		// check if the types are equal
-		if (typeTo.equals(typeFrom)) 
-			return true;
-		// check hierarchy (don't allow object array subtyping)
-		if (scope.isTypeOf(typeTo.getName(), typeFrom.getName()) &&
-				!typeFrom.isArrayType())
-			return true;
-		return false;
 	}
 
 	@Override
 	public Object visit(Assignment assignment) {
-		Type typeTo = (Type)assignment.getVariable().accept(this);
-		Type typeFrom = (Type)assignment.getAssignment().accept(this);
+		if (!(Boolean)assignment.getVariable().accept(this))
+			return false;
+		Type typeTo = assignment.getVariable().getEntryType();
+		if (!(Boolean)assignment.getAssignment().accept(this))
+			return false;
+		Type typeFrom = assignment.getAssignment().getEntryType();
 		
-		if (typeTo==null || typeFrom == null)
-			throw new TypeException("Assignment variable and value must be of non-void type", assignment.getLine());
-		if (typeTo != typeFrom)
-			throw new TypeException("Value assigned to local variable type mismatch", assignment.getLine());
-		return typeTo;
+		if ((!(typeTo.isNullAssignable() && typeFrom.isNullType())) && (!typeTo.equals(typeFrom)) 
+				&& (!typeTo.subTypeOf(typeFrom))) {
+			semanticErrorThrower =  new SemanticErrorThrower(assignment.getLine(), "Value assigned to local variable type mismatch");
+			return false;
+		} 
+
+		return true;
 	}
 
 	@Override
 	public Object visit(CallStatement callStatement) {
-		return callStatement.getCall().accept(this);
+		if (!(Boolean)callStatement.getCall().accept(this))
+			return false;
+
+		return true;
 	}
 
 	@Override
 	public Object visit(Return returnStatement) {
 		Type typeInFact = new VoidType();
-		if (returnStatement.getValue() != null) {
-			typeInFact = (Type)returnStatement.getValue().accept(this);
-			if (typeInFact == null)
-				throw new TypeException("Return value must be of non-void type", returnStatement.getLine());
+		if (returnStatement.hasValue()) {
+			if (!(Boolean)returnStatement.getValue().accept(this))
+				return false;
+			typeInFact = returnStatement.getValue().getEntryType();
 		}
 		SymbolTable scope = returnStatement.getSymbolsTable();
 		//System.out.println("*1"+scope.getType()+"\n");
@@ -126,36 +141,52 @@ public class TypeValidator implements Visitor{
 				typeExpected=typeExpected.substring(x.getType().toString().indexOf("->")+3);
 			}
 		}
-		if (!typeInFact.toString().equals(typeExpected))
-			throw new TypeException(String.format(
-					"Return statement is not of type %s", typeExpected), returnStatement.getLine());
+		if (!typeInFact.toString().equals(typeExpected)) {
+			semanticErrorThrower =  new SemanticErrorThrower(returnStatement.getLine(), String.format(
+					"Return statement is not of type %s", typeExpected));
+			return false;
+		}
 			
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(If ifStatement) {
-		Type typeCondition = (Type)ifStatement.getCondition().accept(this);
-		if (typeCondition == null || !typeCondition.isBoolType())
-			throw new TypeException("Non boolean condition for if statement", ifStatement.getLine());
-		ifStatement.getOperation().accept(this);
-		if (ifStatement.hasElse())
-		{
-			ifStatement.getElseOperation().setSymbolsTable(ifStatement.getSymbolsTable());
-			ifStatement.getElseOperation().accept(this);
+		if (!(Boolean)ifStatement.getCondition().accept(this))
+			return false;
+		
+		Type typeCondition = ifStatement.getCondition().getEntryType();
+		
+		if (!typeCondition.isBoolType()) {
+			semanticErrorThrower =  new SemanticErrorThrower(ifStatement.getLine(), "Non boolean condition for if statement");
+			return false;
 		}
-		return null;
+		
+		if (!(Boolean)ifStatement.getOperation().accept(this))
+			return false;
+		
+		if (ifStatement.hasElse())
+			if (!(Boolean)ifStatement.getElseOperation().accept(this))
+				return false;
+		return true;
 	}
 
 	@Override
 	public Object visit(While whileStatement) {
-		Type typeCondition = (Type)whileStatement.getCondition().accept(this);
-		if (typeCondition == null || !typeCondition.isBoolType())
-			throw new TypeException("Non boolean condition for while statement", whileStatement.getLine());
+		if (!(Boolean)whileStatement.getCondition().accept(this))
+			return false;
+		
+		Type typeCondition = whileStatement.getCondition().getEntryType();
+		if (!typeCondition.isBoolType()) {
+			semanticErrorThrower =  new SemanticErrorThrower(whileStatement.getLine(), "Non boolean condition for while statement");
+			return false;
+		}
 		loopNesting++;
-		whileStatement.getOperation().accept(this);
+		if (!(Boolean)whileStatement.getOperation().accept(this))
+			return false;
+		
 		loopNesting--;
-		return null;
+		return true;
 	}
 	
 	private boolean isBreakContinueValid() {
@@ -164,203 +195,201 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Break breakStatement) {
-		if (isBreakContinueValid() == false)
-			throw new TypeException("Use of 'break' statement outside of loop not allowed", 
-					breakStatement.getLine());
-		return null;
+		if (!isBreakContinueValid()) {
+			semanticErrorThrower =  new SemanticErrorThrower(breakStatement.getLine(), 
+					"Use of 'break' statement outside of loop not allowed");
+			return false;
+		}
+		return true;
 	}
 
 	@Override
 	public Object visit(Continue continueStatement) {
-		if (isBreakContinueValid() == false)
-			throw new TypeException("Use of 'continue' statement outside of loop not allowed", 
-					continueStatement.getLine());
-		return null;
+		if (!isBreakContinueValid()) {
+			semanticErrorThrower =  new SemanticErrorThrower(continueStatement.getLine(), 
+					"Use of 'continue' statement outside of loop not allowed");
+			return false;
+		}
+		return true;
 	}
 
 	@Override
 	public Object visit(StatementsBlock statementsBlock) {
-		for (Statement statement : statementsBlock.getStatements()) {
-			statement.accept(this);
-		}
-		return null;
+		for (Statement statement : statementsBlock.getStatements()) 
+			if (!(Boolean)statement.accept(this))
+				return false;
+		return true;
 	}
 
 	@Override
 	public Object visit(LocalVariable localVariable) {
-		if (localVariable.getInitValue() != null) 
+		if (localVariable.hasInitValue()) 
 		{
-			Type type = (Type)localVariable.getInitValue().accept(this);
-			if (type == null) 
-				throw new TypeException("Initializing value must be of non-void type", localVariable.getLine());
-			if (isTypeAssignmentValid(localVariable.getEntryType(), type, localVariable.getSymbolsTable()) == false) {
-				throw new TypeException("Value assigned to local variable type mismatch", localVariable.getLine());
+			if (!(Boolean)localVariable.getInitValue().accept(this))
+				return false;
+			Type varType = localVariable.getEntryType();
+			Type initType = localVariable.getInitValue().getEntryType();
+			
+			if ((!(varType.isNullAssignable() && initType.isNullType())) && (!varType.equals(initType)) 
+			&& (!initType.subTypeOf(varType))) {
+				semanticErrorThrower =  new SemanticErrorThrower(localVariable.getLine(), "Value assigned to local variable type mismatch");
+				return false;
 			} 
 		}
-
-		return null;
-	}
-	
-	void validateClassScope(SymbolTable scope, ClassType object, String name, int line) {
-		if (scope == null) {
-			if (object == null || object.name.equals("Library"))
-				throw new TypeException(String.format("Method %s doesn't exist", name), line);
-			else 
-				throw new TypeException("Unable to find class scope", line);
-				
-		}
+		return true;
 	}
 
 	@Override
 	public Object visit(VariableLocation location) {
-		return location.getEntryType();
+		if (location.isExternal()) {
+			if (!(Boolean)location.getLocation().accept(this))
+				return false;
+			if (!location.getLocation().getEntryType().isClassType()) {
+				semanticErrorThrower =  new SemanticErrorThrower(location.getLine(), "External location must have a class type");
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
 	public Object visit(ArrayLocation location) {
-		Type typeIndex = (Type)location.getIndex().accept(this);
-		Type typeArray = location.getEntryType();
-		if (typeIndex == null || !typeIndex.isIntType())
-			throw new TypeException("Array index must be an integer", location.getLine());
-		if (typeArray == null)
-			throw new TypeException("Array type must be of non-void type", location.getLine());
-		//Type typeReturned = typeArray.clone();
-		//typeReturned.decrementDimension();
-		return typeArray;
+		if (!(Boolean)location.getIndex().accept(this))
+			return false;
+		if (!(Boolean)location.getArray().accept(this))
+			return false;
+		Type typeIndex = location.getIndex().getEntryType();
+		
+		Type typeArray = location.getArray().getEntryType();
+		if (!typeIndex.isIntType()) {
+			semanticErrorThrower = new SemanticErrorThrower(location.getLine(), "Array index must be an integer");
+			return false;
+		}
+
+		location.setEntryType(typeTable.getTypeFromArray(typeArray));
+		return true;
 	}
 
 	@Override
 	public Object visit(StaticCall call) {
-		
-		SymbolTable scope = call.getSymbolsTable();
-		while (scope.getParentSymbolTable() != null)
-			scope = scope.getParentSymbolTable();
-		scope = scope.getClassScope(call.getClassName());
-		validateClassScope(scope, null, call.getName(), call.getLine());
-
-		
-		// figure out if the name even exists
-		SymbolEntry symFromST = scope.getEntry(call.getName());
-		if (symFromST == null) {
-			throw new TypeException(String.format("Method %s doesn't exist", 
-					call.getName()), call.getLine());
-		}
-		
-		return symFromST.getType().equals("void") ? null : symFromST.getType(); // TODO ???
+		return true; 
 	}
 
 	@Override
 	public Object visit(VirtualCall call) {
-		
-		SymbolTable scope = call.getSymbolsTable();
-		Object typeObject = null;
-		String prefixClass = "";
 		if (call.getLocation() != null) {
-			typeObject = call.getLocation().accept(this);
-			if (typeObject instanceof ClassType == false)
-				throw new TypeException("Object is not of class type", call.getLine());
-			prefixClass = ((ClassType)typeObject).name + ".";
-			while (scope.getParentSymbolTable() != null)
-				scope = scope.getParentSymbolTable();
-			scope = scope.getClassScope(((ClassType)typeObject).name);
-			validateClassScope(scope, (ClassType)typeObject, call.getName(), call.getLine());
-		}
-		else {
-			if (scope.getType() == IDSymbolsKinds.STATIC_METHOD) {
-				SymbolEntry symFromSTTemp = scope.getEntry(call.getName());
-				if (symFromSTTemp == null || symFromSTTemp.getKind() == IDSymbolsKinds.VIRTUAL_METHOD)
-					throw new TypeException(
-							"Calling a local virtual method from inside a static method is not allowed", call.getLine());	
-				
+			if (!(Boolean)call.getLocation().accept(this))
+				return false;
+			Type locationType = call.getLocation().getEntryType();
+			if (!locationType.isClassType()) {
+				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Object is not of class type");
+				return false;
 			}
-		}
+		}	
 		
-		// figure out if the name even exists
-		SymbolEntry symFromST = scope.getEntry(call.getName());
-		if (symFromST == null) {
-			if (call.getLocation() == null) {
-				throw new TypeException(String.format(
-						"%s not found in symbol table", call.getName()), call.getLine());
-			}
-			throw new TypeException(String.format("Method %s.%s not found in type table", 
-					((ClassType)typeObject).name, call.getName()), call.getLine());
-
-		}
-		
-		
-		return symFromST.getType().equals("void") ? null : symFromST.getType(); // TODO ???
+		return true; 
 	}
 
 	@Override
 	public Object visit(This thisExpression) {
 		SymbolTable scope = thisExpression.getSymbolsTable();
-		if (scope.getType() == IDSymbolsKinds.STATIC_METHOD)
-			throw new TypeException("Use of 'this' expression inside static method is not allowed", thisExpression.getLine());
-		while (scope.getType() != IDSymbolsKinds.CLASS) {
+		while (scope.getId().contains("block#")) 
 			scope = scope.getParentSymbolTable();
-			if (scope == null)
-				throw new TypeException("this keyword out of class context", thisExpression.getLine());
+		if (scope.getParentSymbolTable().getEntry(scope.getId()).getKind() == IDSymbolsKinds.STATIC_METHOD) {
+			semanticErrorThrower = new SemanticErrorThrower(thisExpression.getLine(), 
+					"Use of 'this' expression inside static method is not allowed");
+			return false;
 		}
-		return new UserType(thisExpression.getLine(), scope.getId());
+		scope = scope.getParentSymbolTable();
+		
+		thisExpression.setEntryType(typeTable.getClassType(scope.getId()));
+		return true;
 	}
 
 	@Override
 	public Object visit(NewClass newClass) {
-		return newClass.getEntryType();
+		newClass.setEntryType(typeTable.getClassType(newClass.getName()));
+		return true;
 	}
 
 	@Override
 	public Object visit(NewArray newArray) {
-		Type typeSize = (Type)newArray.getSize().accept(this);
+		if (!(Boolean)newArray.getSize().accept(this))
+			return false;
 		
-		if (typeSize == null || !typeSize.isIntType())
-			throw new TypeException("Array size must be an integer", newArray.getLine());
+		Type typeSize = newArray.getSize().getEntryType();
+		if (typeSize == null || !typeSize.isIntType()) {
+			semanticErrorThrower = new SemanticErrorThrower(newArray.getLine(), "Array size must be an integer");
+			return false;
+		}
+		
+		if (newArray.getType() instanceof PrimitiveType)
+			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getPrimitiveType(newArray.getType().getName()), 
+					newArray.getType().getDimension()));
+		if (newArray.getType() instanceof UserType)
+			newArray.setEntryType(typeTable.getArrayFromType(typeTable.getClassType(newArray.getType().getName()), 
+					newArray.getType().getDimension()));
 
-		return newArray.getEntryType();
+		return true;
 	}
 
 	@Override
 	public Object visit(Length length) {
-		Type type = (Type)length.getArray().accept(this);
-		if (!type.isArrayType())
-			throw new TypeException("Length expression must have an array type", length.getLine());
-		return length.getEntryType();
+		if (!(Boolean)length.getArray().accept(this))
+			return false;
+		Type type = length.getArray().getEntryType();
+		if (!type.isArrayType()) {
+			semanticErrorThrower = new SemanticErrorThrower(length.getLine(), "Length expression must have an array type");
+			return false;
+		}
+		length.setEntryType(typeTable.getPrimitiveType(DataTypes.INT.getDescription()));
+		return true;
 	}
 
 	@Override
 	public Object visit(Literal literal) {
-		return literal.getEntryType();
+		literal.setEntryType(typeTable.getLiteralType(literal.getType().getDescription()));
+		return true;
 	}
 
 	@Override
 	public Object visit(LogicalUnaryOp unaryOp) {
-	
-		Type type = (Type)unaryOp.getOperand().accept(this);
-		if (type == null)
-			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
+		if (!(Boolean)unaryOp.getOperand().accept(this))
+			return false;
+		Type type = unaryOp.getOperand().getEntryType();
 		switch(unaryOp.getOperator()) {
 			case LNEG:
-				if (type.isBoolType())
-					return type;
+				if (type.isBoolType()) {
+					unaryOp.setEntryType(type);
+					return true;
+				}
 				break;
 			default:
 				break;
 		}
-		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
+		
+		semanticErrorThrower = new SemanticErrorThrower(unaryOp.getLine(), "Operand of unary operator has an invalid type");
+		return false;
 	}
 
 	@Override
 	public Object visit(LogicalBinaryOp binaryOp) {
-		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
-		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
+		if (!(Boolean)binaryOp.getFirstOperand().accept(this))
+			return false;
+			if (!(Boolean)binaryOp.getSecondOperand().accept(this))
+			return false;
+		Type typeFirst = binaryOp.getFirstOperand().getEntryType();
+		Type typeSecond = binaryOp.getSecondOperand().getEntryType();
 
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
 			case LAND:
 			case LOR:
-				if (typeFirst.isBoolType() && typeSecond.isBoolType()) 
-					return binaryOp.getEntryType();
+				if (typeFirst.isBoolType() && typeSecond.isBoolType()) {
+					binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
+					return true;
+				}
 				onWhat = "non-boolean";
 				opType = "logical";
 				break;
@@ -368,23 +397,23 @@ public class TypeValidator implements Visitor{
 			case LTE:
 			case GT:
 			case GTE:
-				if (typeFirst.isIntType() && typeSecond.isIntType()) 
-					return binaryOp.getEntryType();
+				if (typeFirst.isIntType() && typeSecond.isIntType()) {
+					binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
+					return true;
+				}
 				onWhat = "non-integer";
 				opType = "logical";
 				break;
 			case EQUAL:
 			case NEQUAL:
-				if (typeFirst.equals(typeSecond))
-					return binaryOp.getEntryType();
-				if ((typeFirst.isNullAssignable()) && (typeSecond.isNullType()))
-					return binaryOp.getEntryType();
-				if ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
-					return binaryOp.getEntryType();
-				if ((typeFirst.subTypeOf(typeSecond)))
-					return binaryOp.getEntryType();
-				if ((typeSecond.subTypeOf(typeFirst)))
-					return binaryOp.getEntryType();
+				if ((typeFirst.equals(typeSecond))
+				|| ((typeFirst.isNullAssignable()) && (typeSecond.isNullType()))	
+				|| ((typeFirst.isNullType()) && (typeSecond.isNullAssignable()))
+				|| ((typeFirst.subTypeOf(typeSecond)))
+				|| ((typeSecond.subTypeOf(typeFirst)))) {
+					binaryOp.setEntryType(typeTable.getPrimitiveType(DataTypes.BOOLEAN.getDescription()));
+					return true;
+				}
 				onWhat = "not-fitting";
 				opType = "logical";
 				break;
@@ -392,44 +421,50 @@ public class TypeValidator implements Visitor{
 				break;
 		}
 		
-		throw new TypeException(String.format("Invalid %s binary op (%s) on %s expression",
-				opType, binaryOp.getOperator().toString(),
-				onWhat), binaryOp.getLine());
-	
+		semanticErrorThrower = new SemanticErrorThrower(binaryOp.getLine(), String.format("Invalid %s binary op (%s) on %s expression",
+				opType, binaryOp.getOperator().toString(), onWhat));
+		return false;
 	}
 
 
 	@Override
 	public Object visit(MathUnaryOp unaryOp) {
-	
-		Type type = (Type)unaryOp.getOperand().accept(this);
-		if (type == null)
-			throw new TypeException("Unary operator operand must be of non-void type", unaryOp.getLine());
-			switch(unaryOp.getOperator()) {
+		if (!(Boolean)unaryOp.getOperand().accept(this))
+			return false;
+		Type type = unaryOp.getOperand().getEntryType();
+		switch(unaryOp.getOperator()) {
 			case UMINUS:
-				if (type.isIntType())
-					return type;
+				if (type.isIntType()) {
+					unaryOp.setEntryType(type);
+					return true;
+				}
 				break;
 			default:
 				break;
 		}
-		throw new TypeException("Operand of unary operator has an invalid type", unaryOp.getLine());
+		semanticErrorThrower = new SemanticErrorThrower(unaryOp.getLine(), "Operand of unary operator has an invalid type");
+		return false;
 	}
 
 	@Override
 	public Object visit(ExpressionBlock expressionBlock) {
-		return (Type)expressionBlock.getExpression().accept(this);
+		if (!(Boolean)expressionBlock.getExpression().accept(this))
+			return false;
+		expressionBlock.setEntryType(expressionBlock.getExpression().getEntryType());
+		return true;
 	}
 
 
 
 	@Override
 	public Object visit(MathBinaryOp binaryOp) {
-		
-		Type typeFirst = (Type)binaryOp.getFirstOperand().accept(this);
-		Type typeSecond = (Type)binaryOp.getSecondOperand().accept(this);
-		if (typeFirst == null || typeSecond == null)
-			throw new TypeException("Binary operator operands must be of non-void type", binaryOp.getLine());
+		if (!(Boolean)binaryOp.getFirstOperand().accept(this))
+			return false;
+			if (!(Boolean)binaryOp.getSecondOperand().accept(this))
+			return false;
+		Type typeFirst = binaryOp.getFirstOperand().getEntryType();
+		Type typeSecond = binaryOp.getSecondOperand().getEntryType();
+
 		String onWhat = "";
 		String opType = "";
 		switch(binaryOp.getOperator()) {
@@ -437,7 +472,7 @@ public class TypeValidator implements Visitor{
 				if ((typeFirst.isIntType() && typeSecond.isIntType()) 
 						|| (typeFirst.isStringType() && typeSecond.isStringType())) {
 						binaryOp.setEntryType(typeFirst);
-						return typeFirst;
+						return true;
 				}
 				onWhat = "non-integer or non-string";
 				opType = "arithmetic";
@@ -448,7 +483,7 @@ public class TypeValidator implements Visitor{
 			case MOD:
 				if (typeFirst.isIntType() && typeSecond.isIntType()) {
 					binaryOp.setEntryType(typeFirst);
-					return typeFirst;
+					return true;
 				}
 				onWhat = "non-integer";
 				opType = "arithmetic";
@@ -456,9 +491,8 @@ public class TypeValidator implements Visitor{
 				default:
 					break;
 		}
-		throw new TypeException(String.format("Invalid %s binary op (%s) on %s expression",
-				opType, binaryOp.getOperator().toString(),
-				onWhat), binaryOp.getLine());
-		
+		semanticErrorThrower = new SemanticErrorThrower(binaryOp.getLine(), String.format("Invalid %s binary op (%s) on %s expression",
+				opType, binaryOp.getOperator().toString(), onWhat));
+		return false;
 	}
 }

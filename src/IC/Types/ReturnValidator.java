@@ -34,8 +34,8 @@ public class ReturnValidator implements Visitor{
 			if (statement.accept(this) != null)
 				return;
 		}
-		if(method instanceof LibraryMethod)
-			throw new TypeException(String.format("Method %s has no return statement", method.getName()), method.getLine());
+	//	if(method instanceof LibraryMethod)
+			//throw new TypeException(String.format("Method %s has no return statement", method.getName()), method.getLine()); //TODO
 	}
 	
 	@Override

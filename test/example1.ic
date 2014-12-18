@@ -34,6 +34,26 @@ class B extends A {
     int j;
 
     void vfunc(A a, int max, int val) {
+		int[][] twoArr = new int[][this.j];
+		int[] oneArr = new int[3];
+		while (true) {
+			if (false) {
+				while (j != oneArr[2]) {
+					if (!(j == j- (-j+3 % oneArr.length)/(j+j*2))) {
+						j = 4; }
+					else
+							while (true) { j = this.j +twoArr.length; }
+				} 
+				string g = "222";
+				{
+					string[][] twoArr2 = new string[][this.j];
+					string[] oneArr2 = new string[3];
+					twoArr2[1] = oneArr2;
+					oneArr2[oneArr2.length] = g + twoArr2[1][5];
+				}
+			}
+		}
+		twoArr[1] = oneArr;
     }
 }
 

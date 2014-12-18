@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-import sun.security.action.GetLongAction;
 import java_cup.runtime.Symbol;
 import IC.AST.*;
 import IC.Parser.*;
@@ -64,8 +63,8 @@ public class Compiler {
 			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), "Global");
 			s.buildSymbolTables(ICRoot);
 
-			TypeValidator tv = new TypeValidator();
-			ICRoot.accept(tv);
+			TypeValidator tv = new TypeValidator(typeTableBuilder.getBuiltTypeTable());
+			tv.validate(ICRoot);
 
 			if(isInArgs(args, "-print-ast")) {
 				//Pretty-print the program to System.out
@@ -83,8 +82,6 @@ public class Compiler {
 		} catch (LexicalError e) {
 			System.out.println(e.getMessage());
 		} catch (SemanticError e) {
-			System.out.println(e.getMessage());
-		} catch (TypeException e) {
 			System.out.println(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
