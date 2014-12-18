@@ -144,15 +144,16 @@ non terminal Literal literal;
 /*precedence left formal, fields, stmnt;
 precedence left method_type;*/
 precedence left ELSE_KEYWORD;
-precedence left DOT;
-precedence left SMALLER_OP, LARGER_OP, SMALLER_EQ_OP, LARGER_EQ_OP, 
-				EQUALS_OP, NOT_EQUALS_OP, AND_OP, OR_OP;
+precedence right ASSIGN;
+precedence left OR_OP;
+precedence left AND_OP;
+precedence left EQUALS_OP, NOT_EQUALS_OP;
+precedence left SMALLER_OP, LARGER_OP, SMALLER_EQ_OP, LARGER_EQ_OP;
 precedence left PLUS, MINUS;
 precedence left MULT, DIVIDE, REMINDER; 
-precedence left UMINUS;
+precedence right UMINUS, EXCLAMATION_MARK;
 /*precedence left ID; */
-precedence left LC, LB;
-precedence left LP;
+precedence left LC, DOT, LP, LB;
 
 /* The grammar */
 program ::= icClass_list:icCl
@@ -271,8 +272,7 @@ stmnt ::= 	location:l ASSIGN expr:exp SEMICOLON
 
 elseStmn ::= ELSE_KEYWORD stmnt:s {: RESULT = s; :} | {: RESULT = null; :} ;
 			
-expr ::=	location:l {: RESULT = l; :} | call:c {: RESULT = c; :} | 
-			THIS_KEYWORD:ths_key
+expr ::=	THIS_KEYWORD:ths_key
 			{: RESULT = new This(ths_keyleft); :} |
 			NEW_KEYWORD:n_key CLASS_ID:c LP RP
 			{: RESULT = new NewClass(n_keyleft, c.toString()); :} |
@@ -288,7 +288,8 @@ expr ::=	location:l {: RESULT = l; :} | call:c {: RESULT = c; :} |
 			{: RESULT = new LogicalUnaryOp(uOp, exp); :} | 
 			mathunop:uOp expr:exp
 			{: RESULT = new MathUnaryOp(uOp, exp); :} | 
-			literal:l {: RESULT = l; :} | LP expr:exp RP {: RESULT = new ExpressionBlock(exp); :}
+			literal:l {: RESULT = l; :} | LP expr:exp RP {: RESULT = new ExpressionBlock(exp); :} |
+			location:l {: RESULT = l; :} | call:c {: RESULT = c; :}
 ;
 	
 call ::=	staticCall:sc {: RESULT = sc; :} | virtualCall:vc {: RESULT = vc; :};

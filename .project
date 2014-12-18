@@ -18,92 +18,92 @@
 		<link>
 			<name>.classpath</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/.classpath</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/.classpath</locationURI>
 		</link>
 		<link>
 			<name>.git</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/.git</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/.git</locationURI>
 		</link>
 		<link>
 			<name>.gitignore</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/.gitignore</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/.gitignore</locationURI>
 		</link>
 		<link>
 			<name>.project</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03//.project</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03//.project</locationURI>
 		</link>
 		<link>
 			<name>.settings</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/.settings</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/.settings</locationURI>
 		</link>
 		<link>
 			<name>111.txt</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/111.txt</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/111.txt</locationURI>
 		</link>
 		<link>
 			<name>Library.cup</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/Library.cup</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/Library.cup</locationURI>
 		</link>
 		<link>
 			<name>Quicksort.ic.ast.pdf</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/Quicksort.ic.ast.pdf</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/Quicksort.ic.ast.pdf</locationURI>
 		</link>
 		<link>
 			<name>Quicksort.ic.ast.txt</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/Quicksort.ic.ast.txt</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/Quicksort.ic.ast.txt</locationURI>
 		</link>
 		<link>
 			<name>README.md</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/README.md</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/README.md</locationURI>
 		</link>
 		<link>
 			<name>build.xml</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/build.xml</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/build.xml</locationURI>
 		</link>
 		<link>
 			<name>classes</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/classes</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/classes</locationURI>
 		</link>
 		<link>
 			<name>doc</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/doc</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/doc</locationURI>
 		</link>
 		<link>
 			<name>java-cup</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/java-cup</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/java-cup</locationURI>
 		</link>
 		<link>
 			<name>myOut.txt</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/myOut.txt</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/myOut.txt</locationURI>
 		</link>
 		<link>
 			<name>out.txt</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/out.txt</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/out.txt</locationURI>
 		</link>
 		<link>
 			<name>src</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/src</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/src</locationURI>
 		</link>
 		<link>
 			<name>test</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/PA03/PA03/test</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/GitHub/PA03/test</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
