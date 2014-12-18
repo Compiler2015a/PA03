@@ -3,7 +3,7 @@ class A {
   int i;
 
   static int sfunc(boolean b) {
-    if (b) {
+    if (2 + 5 < 3) {
       {
 		int[] l;
       }

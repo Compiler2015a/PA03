@@ -130,14 +130,12 @@ non terminal Formal formal;
 non terminal Type type;
 non terminal List<Statement> stmnt_list; 
 non terminal Statement stmnt, elseStmn;
-non terminal Expression expr;
+non terminal Expression expr, binaryOp, unaryOp;
 non terminal Call call;
 non terminal StaticCall staticCall;
 non terminal VirtualCall virtualCall;
 non terminal List<Expression> arguments, extra_arguments;
 non terminal Location location;
-non terminal IC.BinaryOps mathbinop, logicbinop;
-non terminal IC.UnaryOps mathunop, logicunop;
 non terminal Literal literal;
 
 /* Precedences */
@@ -280,18 +278,44 @@ expr ::=	THIS_KEYWORD:ths_key
 			{: t.incrementDimension(); RESULT = new NewArray(t, exp); :} |
 			expr:exp DOT LENGTH_KEYWORD
 			{: RESULT = new Length(exp); :} | 
-			expr:exp1 logicbinop:bOp expr:exp2
-			{: RESULT = new LogicalBinaryOp(exp1, bOp, exp2); :} | 
-			expr:exp1 mathbinop:bOp expr:exp2
-			{: RESULT = new MathBinaryOp(exp1, bOp, exp2); :} | 
-			logicunop:uOp expr:exp
-			{: RESULT = new LogicalUnaryOp(uOp, exp); :} | 
-			mathunop:uOp expr:exp
-			{: RESULT = new MathUnaryOp(uOp, exp); :} | 
+			binaryOp:exp {: RESULT = exp; :} | 
+			unaryOp:exp {: RESULT = exp; :} | 
 			literal:l {: RESULT = l; :} | LP expr:exp RP {: RESULT = new ExpressionBlock(exp); :} |
 			location:l {: RESULT = l; :} | call:c {: RESULT = c; :}
 ;
-	
+
+binaryOp ::=	expr:exp1 PLUS expr:exp2
+				{: RESULT = new MathBinaryOp(exp1, IC.BinaryOps.PLUS, exp2); :} |
+				expr:exp1 MINUS expr:exp2
+				{: RESULT = new MathBinaryOp(exp1, IC.BinaryOps.MINUS, exp2); :} |
+				expr:exp1 MULT expr:exp2
+				{: RESULT = new MathBinaryOp(exp1, IC.BinaryOps.MULTIPLY, exp2); :} |
+				expr:exp1 DIVIDE expr:exp2
+				{: RESULT = new MathBinaryOp(exp1, IC.BinaryOps.DIVIDE, exp2); :} |
+				expr:exp1 REMINDER expr:exp2
+				{: RESULT = new MathBinaryOp(exp1, IC.BinaryOps.MOD, exp2); :} |
+				expr:exp1 SMALLER_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.LT, exp2); :} |	
+				expr:exp1 LARGER_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.GT, exp2); :} |			
+				expr:exp1 SMALLER_EQ_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.LTE, exp2); :} |		
+				expr:exp1 LARGER_EQ_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.GTE, exp2); :} |	
+				expr:exp1 EQUALS_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.EQUAL, exp2); :}	|		
+				expr:exp1 NOT_EQUALS_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.NEQUAL, exp2); :} |		
+				expr:exp1 AND_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.LAND, exp2); :} |	
+				expr:exp1 OR_OP expr:exp2
+				{: RESULT = new LogicalBinaryOp(exp1, IC.BinaryOps.LOR, exp2); :}
+;
+
+unaryOp ::= EXCLAMATION_MARK expr:exp {: RESULT = new LogicalUnaryOp(IC.UnaryOps.LNEG, exp); :} |
+			MINUS expr:exp {: RESULT = new MathUnaryOp(IC.UnaryOps.UMINUS, exp); :} %prec UMINUS
+;
+
 call ::=	staticCall:sc {: RESULT = sc; :} | virtualCall:vc {: RESULT = vc; :};
 
 staticCall ::= 	CLASS_ID:c DOT ID:m LP arguments:args RP
@@ -323,22 +347,6 @@ location ::= ID:vName
 			 expr:exp LC expr:ind_exp RC
 			 {: RESULT = new ArrayLocation(exp, ind_exp); :} 
 ;
-
-logicbinop ::= SMALLER_OP {: RESULT = IC.BinaryOps.LT; :} |
-			LARGER_OP {: RESULT = IC.BinaryOps.GT; :} | SMALLER_EQ_OP {: RESULT = IC.BinaryOps.LTE; :} |
-			LARGER_EQ_OP {: RESULT = IC.BinaryOps.GTE; :} | EQUALS_OP {: RESULT = IC.BinaryOps.EQUAL; :} | 
-			NOT_EQUALS_OP {: RESULT = IC.BinaryOps.NEQUAL; :} | 
-			AND_OP {: RESULT = IC.BinaryOps.LAND; :} | OR_OP {: RESULT = IC.BinaryOps.LOR; :};
-			
-logicunop ::= EXCLAMATION_MARK {: RESULT = IC.UnaryOps.LNEG; :};
-			
-
-mathbinop ::= PLUS {: RESULT = IC.BinaryOps.PLUS; :} | MINUS {: RESULT = IC.BinaryOps.MINUS; :} |
-			MULT {: RESULT = IC.BinaryOps.MULTIPLY; :} | DIVIDE {: RESULT = IC.BinaryOps.DIVIDE; :} |
-			REMINDER {: RESULT = IC.BinaryOps.MOD; :}
-;
-
-mathunop ::= MINUS {: RESULT = IC.UnaryOps.UMINUS; :} %prec UMINUS;
 
 literal ::= INTEGER_LITERAL:n
 			{: RESULT = new Literal(nleft, IC.LiteralTypes.INTEGER, n); :} |
