@@ -1,7 +1,5 @@
 package IC.Types;
 
-import IC.AST.ICClass;
-
 public abstract class Type {
 	protected String name;
 	
@@ -57,7 +55,7 @@ public abstract class Type {
 			return true;
 		if (this instanceof MethodType) {
 			MethodType methodType = (MethodType)this;
-			return methodType.returnType.isNullAssignable();
+			return methodType.getReturnType().isNullAssignable();
 		}
 		return false;
 	}
@@ -152,8 +150,9 @@ class ArrayType extends Type
 
 class MethodType extends Type 
 {  
-	Type[] paramTypes;
-	Type returnType;
+	private Type[] paramTypes;
+
+	private Type returnType;
 
 	public MethodType(Type[] paramTypes,Type returnType)
 	{
@@ -164,6 +163,10 @@ class MethodType extends Type
 	
 	public Type getReturnType() {
 		return returnType;
+	}
+	
+	public Type[] getParamTypes() {
+		return paramTypes;
 	}
 	
 	@Override

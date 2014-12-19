@@ -53,6 +53,8 @@ class A {
 	
 	if(no(i,t))
 	
+	int s1 = B.test1(1, "s");
+	
 	if(b.yes(i,f))
 		i=5;
 	else
@@ -79,7 +81,7 @@ class A {
 
 class B {
 	int bint;
-	
+	static int test1(int arg1, string srg2) { }
 	boolean yes(int a, boolean b) {
 		return true;
 	}

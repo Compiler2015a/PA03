@@ -272,6 +272,26 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(StaticCall call) {
+		for (Expression arg : call.getArguments())
+			if (!(Boolean)arg.accept(this))
+				return false;
+		SymbolEntry methodEntry = call.getMethodEntry();
+		MethodType calledMethodType = (MethodType)methodEntry.getType();
+		if (call.getArguments().size() != calledMethodType.getParamTypes().length) {
+			semanticErrorThrower = new SemanticErrorThrower(call.getLine(), 
+					String.format("Method except %d arguments but gets %d", 
+							calledMethodType.getParamTypes().length, call.getArguments().size()));
+			return false;
+		}
+
+		for (int i = 0; i < call.getArguments().size(); i++) {
+			if (!call.getArguments().get(i).getEntryType().equals(
+					calledMethodType.getParamTypes()[i])) {
+				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Argument type dosen't match the method parameter type");
+				return false;
+			}
+		}
+		call.setEntryType(typeTable.getReturnTypeFromMethodType(calledMethodType));
 		return true; 
 	}
 
@@ -288,6 +308,25 @@ public class TypeValidator implements Visitor{
 			}
 		}	
 		
+		for (Expression arg : call.getArguments())
+			if (!(Boolean)arg.accept(this))
+				return false;
+		SymbolEntry methodEntry = call.getMethodEntry();
+		MethodType calledMethodType = (MethodType)methodEntry.getType();
+		if (call.getArguments().size() != calledMethodType.getParamTypes().length) {
+			semanticErrorThrower = new SemanticErrorThrower(call.getLine(), 
+					String.format("Method expects %d arguments but gets %d", 
+							calledMethodType.getParamTypes().length, call.getArguments().size()));
+			return false;
+		}
+		for (int i = 0; i < call.getArguments().size(); i++) {
+			if (!call.getArguments().get(i).getEntryType().equals(
+					calledMethodType.getParamTypes()[i])) {
+				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Argument type dosen't match the method parameter type");
+				return false;
+			}
+		}
+		call.setEntryType(typeTable.getReturnTypeFromMethodType(calledMethodType));
 		return true; 
 	}
 
