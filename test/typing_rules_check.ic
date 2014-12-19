@@ -4,7 +4,7 @@ class A {
 	rules and some other stuff 
 	this should all be compiled ok*/
 	
-	void main() {
+	static void main (string[] args) {
 	//boolean literals
 	boolean t = true;
 	boolean f = false;

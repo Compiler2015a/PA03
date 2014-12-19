@@ -5,7 +5,8 @@ import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 
 public class TypeTableBuilder implements Visitor {
-
+	private final String MAIN_METHOD_CORRECT_SIGNATURE = "string[] -> void";
+	
 	private TypeTable builtTypeTable;
 	private SemanticErrorThrower semanticErrorThrower;
 	
@@ -19,13 +20,13 @@ public class TypeTableBuilder implements Visitor {
 	}
 	
 	public void buildTypeTable(Program program) throws SemanticError {
-		if (!findMainMethod(program))
+		if (!findAndCheckMainMethod(program))
 			semanticErrorThrower.execute();
 		if (!(Boolean)visit(program))
 			semanticErrorThrower.execute();
 	}
 	
-	private Boolean findMainMethod(Program program) {
+	private Boolean findAndCheckMainMethod(Program program) {
 		int mainMethodCounter = 0;
 		Method lastMainMethod = null;
 		for (ICClass icClass : program.getClasses()) {
@@ -45,11 +46,22 @@ public class TypeTableBuilder implements Visitor {
 			return false;
 		}
 		
+		if (!(lastMainMethod instanceof StaticMethod)) {
+			semanticErrorThrower = new SemanticErrorThrower(lastMainMethod.getLine(), "Main Method must be static");
+			return false;
+		}
+			
 		for (Formal formal : lastMainMethod.getFormals())
 			formal.accept(this);
 		lastMainMethod.getType().accept(this);
 		
 		builtTypeTable.addMethodType(lastMainMethod);
+		MethodType methodType = builtTypeTable.getMethodType(lastMainMethod);
+		if (!methodType.toString().equals(MAIN_METHOD_CORRECT_SIGNATURE)) {
+			semanticErrorThrower = new SemanticErrorThrower(lastMainMethod.getLine(), "Main Method has a wrong signature");
+			return false;
+		}
+		
 		return true;
 		
 		// TODO:
