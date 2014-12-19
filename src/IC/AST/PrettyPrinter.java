@@ -25,7 +25,7 @@ public class PrettyPrinter implements Visitor {
 	private void indent(StringBuffer output, ASTNode node) {
 		output.append("\n");
 		for (int i = 0; i < depth; ++i)
-			output.append(" ");
+			output.append("  ");
 		if (node != null)
 			output.append(node.getLine() + ": ");
 	}
@@ -178,9 +178,9 @@ public class PrettyPrinter implements Visitor {
 			output.append(", with return value");
 		output.append(", Symbol table: " + returnStatement.getSymbolsTable().toString());
 		if (returnStatement.hasValue()) {
-			++depth;
+			depth+=2;
 			output.append(returnStatement.getValue().accept(this));
-			--depth;
+			depth-=2;
 		}
 		return output.toString();
 	}
@@ -274,9 +274,9 @@ public class PrettyPrinter implements Visitor {
 			output.append(", in external scope");
 		output.append(", Type: " + location.getEntryType().toString() +", Symbol table: " + location.getSymbolsTable().toString());
 		if (location.isExternal()) {
-			++depth;
+			depth+=2;
 			output.append(location.getLocation().accept(this));
-			--depth;
+			depth-=2;
 		}
 		return output.toString();
 	}

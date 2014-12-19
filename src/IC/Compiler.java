@@ -73,6 +73,7 @@ public class Compiler {
 			}
 			
 			if(isInArgs(args, "-dump-symtab")) {
+				System.out.println();
 				s.getSymbolTable().printTable();
 				typeTableBuilder.getBuiltTypeTable().printTable();
 			}

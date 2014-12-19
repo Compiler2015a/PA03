@@ -10,20 +10,20 @@
                     8: Declaration of local variable: k, with initial value, Type: int, Symbol table: statement block in statement block in sfunc
                         8: Integer literal: 5, Type: int, Symbol table: statement block in statement block in sfunc
                 10: Return statement, with return value, Symbol table: statement block in sfunc
-                  10: Integer literal: 1, Type: int, Symbol table: statement block in sfunc
+                    10: Integer literal: 1, Type: int, Symbol table: statement block in sfunc
             12: Block of statements, Symbol table: sfunc
                 13: Declaration of local variable: x, with initial value, Type: A, Symbol table: statement block in sfunc
                     13: Instantiation of class: A, Type: A, Symbol table: statement block in sfunc
                 14: Assignment statement, Symbol table: statement block in sfunc
                     14: Reference to variable: i, in external scope, Type: int, Symbol table: statement block in sfunc
-                      14: Reference to variable: x, Type: A, Symbol table: statement block in sfunc
+                        14: Reference to variable: x, Type: A, Symbol table: statement block in sfunc
                     14: Integer literal: 9, Type: int, Symbol table: statement block in sfunc
                 15: Assignment statement, Symbol table: statement block in sfunc
                     15: Reference to variable: str, in external scope, Type: string, Symbol table: statement block in sfunc
-                      15: Reference to variable: x, Type: A, Symbol table: statement block in sfunc
+                        15: Reference to variable: x, Type: A, Symbol table: statement block in sfunc
                     15: String literal: "hello", Type: string, Symbol table: statement block in sfunc
                 16: Return statement, with return value, Symbol table: statement block in sfunc
-                  16: Integer literal: 0, Type: int, Symbol table: statement block in sfunc
+                    16: Integer literal: 0, Type: int, Symbol table: statement block in sfunc
     20: Declaration of virtual method: vfunc, Type: {A, int, int -> void}, Symbol table: A
         20: Parameter: a, Type: A, Symbol table: vfunc
         20: Parameter: max, Type: int, Symbol table: vfunc
@@ -63,4 +63,3 @@
     40: Declaration of static method: main, Type: {string[] -> void}, Symbol table: C
         40: Parameter: args, Type: string[], Symbol table: main
         41: Declaration of local variable: a, Type: A[][], Symbol table: main
-		
