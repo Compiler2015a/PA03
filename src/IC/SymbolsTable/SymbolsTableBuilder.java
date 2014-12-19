@@ -316,6 +316,7 @@ public class SymbolsTableBuilder implements Visitor {
 			return false;
 		}
 		
+		call.setEntryType(typeTable.getReturnTypeFromMethodType(methodEntry.getType()));
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))
@@ -336,13 +337,14 @@ public class SymbolsTableBuilder implements Visitor {
 		}
 		else 
 			methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, call.getSymbolsTable());
-		
+
 		if(methodEntry == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-
+		
+		call.setEntryType(typeTable.getReturnTypeFromMethodType(methodEntry.getType()));
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))

@@ -174,6 +174,10 @@ public class TypeTable {
 		return uniqueMethodTypes.get(methodType.toString());
 	}
 	
+	public Type getReturnTypeFromMethodType(Type type) {
+		MethodType methodType = (MethodType)type;
+		return methodType.getReturnType();
+	}
 	public Type getPrimitiveType(String dataTypeName) {
 		if (dataTypeName == DataTypes.INT.getDescription())
 			return intType;

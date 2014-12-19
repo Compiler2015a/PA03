@@ -277,9 +277,10 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(VirtualCall call) {
-		if (call.getLocation() != null) {
+		if (call.isExternal()) {
 			if (!(Boolean)call.getLocation().accept(this))
 				return false;
+			
 			Type locationType = call.getLocation().getEntryType();
 			if (!locationType.isClassType()) {
 				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Object is not of class type");

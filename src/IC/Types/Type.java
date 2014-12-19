@@ -154,11 +154,16 @@ class MethodType extends Type
 {  
 	Type[] paramTypes;
 	Type returnType;
+
 	public MethodType(Type[] paramTypes,Type returnType)
 	{
 		super("MethodType");
 		this.paramTypes=paramTypes;
 		this.returnType=returnType;
+	}
+	
+	public Type getReturnType() {
+		return returnType;
 	}
 	
 	@Override
