@@ -65,6 +65,7 @@ public class Compiler {
 
 			TypeValidator tv = new TypeValidator(typeTableBuilder.getBuiltTypeTable());
 			tv.validate(ICRoot);
+			
 
 			if(isInArgs(args, "-print-ast")) {
 				//Pretty-print the program to System.out

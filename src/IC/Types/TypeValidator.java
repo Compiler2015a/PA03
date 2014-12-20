@@ -1,6 +1,7 @@
 package IC.Types;
 
 
+import sun.org.mozilla.javascript.internal.ast.ReturnStatement;
 import IC.DataTypes;
 import IC.AST.*;
 import IC.SemanticAnalysis.SemanticError;
@@ -49,17 +50,51 @@ public class TypeValidator implements Visitor{
 	}
 	
 	public Object visitMethod(Method method) {
+		
 		for (Formal formal : method.getFormals()) 
 			if (!(Boolean)formal.accept(this))
 				return false;
-				
+		if (method.getType().getName().equals("void"))
+			return true;
 		for (Statement statement : method.getStatements()) 
-			if (!(Boolean)statement.accept(this))
-				return false;
-
-		return true;
+		{
+			if(statement instanceof Return && statement.accept(this) != null )
+				return true;
+			if(statement instanceof If && statement.accept(this) != null )
+			{
+				if(hasReturnStatementInIf(statement))
+					return true;
+			}
+		}
+		if((method instanceof LibraryMethod))
+			return true;
+			
+		semanticErrorThrower =  new SemanticErrorThrower(method.getLine(), String.format("Method %s has no return statement", method.getName()));
+		return false;
 	}
 
+	private boolean hasReturnStatementInIf(Statement statement)
+	{
+		boolean hasReturnInIfScope=false;
+		boolean hasReturnInElseScope=false;
+		if(statement instanceof If)
+		{
+			for(Statement st: ((StatementsBlock)((If)statement).getOperation()).getStatements())
+			{
+				if(st instanceof Return)
+					hasReturnInIfScope=true;
+			}
+			if(((If)statement).hasElse())
+				for(Statement st: ((StatementsBlock)((If)statement).getElseOperation()).getStatements())
+				{
+					if(st instanceof Return)
+						hasReturnInElseScope=true;
+				}
+		}
+		return (hasReturnInIfScope && hasReturnInElseScope);
+		
+	}
+	
 	@Override
 	public Object visit(VirtualMethod method) {
 		return visitMethod(method);
@@ -120,6 +155,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Return returnStatement) {
+		
 		Type typeInFact = new VoidType();
 		if (returnStatement.hasValue()) {
 			if (!(Boolean)returnStatement.getValue().accept(this))
@@ -127,7 +163,6 @@ public class TypeValidator implements Visitor{
 			typeInFact = returnStatement.getValue().getEntryType();
 		}
 		SymbolTable scope = returnStatement.getSymbolsTable();
-		//System.out.println("*1"+scope.getType()+"\n");
 		while (scope.getId().contains("block#")) 
 			scope = scope.getParentSymbolTable();
 		
@@ -146,7 +181,6 @@ public class TypeValidator implements Visitor{
 					"Return statement is not of type %s", typeExpected));
 			return false;
 		}
-			
 		return true;
 	}
 
