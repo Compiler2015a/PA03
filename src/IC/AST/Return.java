@@ -8,7 +8,8 @@ package IC.AST;
 public class Return extends Statement {
 
 	private Expression value = null;
-
+	private IC.Types.Type methodType;
+	
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
 	}
@@ -44,4 +45,13 @@ public class Return extends Statement {
 		return value;
 	}
 
+	public IC.Types.Type getMethodType() {
+		return methodType;
+	}
+
+	public void setMethodType(IC.Types.Type methodType) {
+		this.methodType = methodType;
+	}
+	
+	
 }

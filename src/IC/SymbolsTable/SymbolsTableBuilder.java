@@ -14,6 +14,7 @@ public class SymbolsTableBuilder implements Visitor {
 	private SymbolTable rootSymbolTable;
 
 	private SymbolTable currentClassSymbolTablePoint;
+	private IC.Types.Type currentMethodType;
 	
 	private TypeTable typeTable;
 	
@@ -25,7 +26,7 @@ public class SymbolsTableBuilder implements Visitor {
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
 		this.rootSymbolTable = new SymbolTable(tableId, SymbolTableTypes.GLOBAL);
 		this.currentClassSymbolTablePoint = null;
-		
+		this.currentMethodType = null;
 		this.typeTable = typeTable;
 		
 		this.semanticErrorThrower = null;
@@ -182,6 +183,7 @@ public class SymbolsTableBuilder implements Visitor {
 				return false;
 		}
 		
+		returnStatement.setMethodType(this.currentMethodType);
 		return true;
 	}
 
@@ -315,7 +317,7 @@ public class SymbolsTableBuilder implements Visitor {
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-		call.setMethodEntry(methodEntry);
+		call.setMethodType(methodEntry.getType());
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))
@@ -342,7 +344,7 @@ public class SymbolsTableBuilder implements Visitor {
 					"the method " + call.getName() + " dosen't exist");
 			return false;
 		}
-		call.setMethodEntry(methodEntry);
+		call.setMethodType(methodEntry.getType());
 		for (Expression arg : call.getArguments()) {
 			arg.setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)arg.accept(this))
@@ -373,6 +375,7 @@ public class SymbolsTableBuilder implements Visitor {
 			return false;
 		}
 		
+		this.currentClassSymbolTablePoint = clsSymbolTable;
 		return true;
 	}
 
@@ -453,6 +456,7 @@ public class SymbolsTableBuilder implements Visitor {
 	private Object visitMethod(Method method) {
 		SymbolTable currentMethodSymbolTable = method.getSymbolsTable().findChildSymbolTable(
 				method.getName());
+		this.currentMethodType = method.getEntryType();
 		for (Formal formal : method.getFormals()) {
 			formal.setSymbolsTable(currentMethodSymbolTable);
 			if (!(Boolean)formal.accept(this))
@@ -476,7 +480,25 @@ public class SymbolsTableBuilder implements Visitor {
 	private Boolean addEntryAndCheckDuplication(SymbolTable table, SymbolEntry entry) {
 		if (table.hasEntry(entry.getId()))
 			return false;
-		
+		if (entry.getKind() == IDSymbolsKinds.FIELD) {
+			SymbolTable scanningTable = table.getParentSymbolTable();
+			while (scanningTable.getTableType() != SymbolTableTypes.GLOBAL) {
+				if (scanningTable.hasEntry(entry.getId()))
+					return false;
+				scanningTable = scanningTable.getParentSymbolTable();
+			}
+		}
+		if (entry.getKind().isMethodKind()) {
+			SymbolTable scanningTable = table.getParentSymbolTable();
+			while (scanningTable.getTableType() != SymbolTableTypes.GLOBAL) {
+				if (scanningTable.hasEntry(entry.getId())) {
+					if (!scanningTable.getEntry(entry.getId()).getType().equals(entry.getType()))
+						return false;
+					else
+						break;
+				}
+			}
+		}
 		table.addEntry(entry.getId(), entry);
 		
 		return true;

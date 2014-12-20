@@ -1,13 +1,10 @@
 package IC.Types;
 
-
-import sun.org.mozilla.javascript.internal.ast.ReturnStatement;
 import IC.DataTypes;
 import IC.AST.*;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.IDSymbolsKinds;
-import IC.SymbolsTable.SymbolEntry;
 import IC.SymbolsTable.SymbolTable;
 
 public class TypeValidator implements Visitor{
@@ -136,8 +133,8 @@ public class TypeValidator implements Visitor{
 			return false;
 		Type typeFrom = assignment.getAssignment().getEntryType();
 		
-		if ((!(typeTo.isNullAssignable() && typeFrom.isNullType())) && (!typeTo.equals(typeFrom)) 
-				&& (!typeTo.subTypeOf(typeFrom))) {
+	
+		if (!isLegalAssignment(typeTo, typeFrom)) {
 			semanticErrorThrower =  new SemanticErrorThrower(assignment.getLine(), "Value assigned to local variable type mismatch");
 			return false;
 		} 
@@ -155,30 +152,19 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Return returnStatement) {
-		
-		Type typeInFact = new VoidType();
+		Type typeInFact;
 		if (returnStatement.hasValue()) {
 			if (!(Boolean)returnStatement.getValue().accept(this))
 				return false;
 			typeInFact = returnStatement.getValue().getEntryType();
 		}
-		SymbolTable scope = returnStatement.getSymbolsTable();
-		while (scope.getId().contains("block#")) 
-			scope = scope.getParentSymbolTable();
+		else
+			typeInFact = typeTable.getPrimitiveType(DataTypes.VOID.getDescription());
 		
-		//get the return type of the match method=scope
-		String typeExpected="void";
-		for(SymbolEntry x: scope.getParentSymbolTable().getEntries().values())
-		{
-			if(x.getId().equals(scope.getId()))
-			{
-				typeExpected=x.getType().toString();
-				typeExpected=typeExpected.substring(x.getType().toString().indexOf("->")+3);
-			}
-		}
-		if (!typeInFact.toString().equals(typeExpected)) {
+		MethodType methodType = (MethodType)returnStatement.getMethodType();
+		if (!isLegalAssignment(methodType.getReturnType(), typeInFact)) {
 			semanticErrorThrower =  new SemanticErrorThrower(returnStatement.getLine(), String.format(
-					"Return statement is not of type %s", typeExpected));
+					"Return statement is not of type %s", methodType.getReturnType().toString()));
 			return false;
 		}
 		return true;
@@ -309,8 +295,7 @@ public class TypeValidator implements Visitor{
 		for (Expression arg : call.getArguments())
 			if (!(Boolean)arg.accept(this))
 				return false;
-		SymbolEntry methodEntry = call.getMethodEntry();
-		MethodType calledMethodType = (MethodType)methodEntry.getType();
+		MethodType calledMethodType = (MethodType)call.getMethodType();
 		if (call.getArguments().size() != calledMethodType.getParamTypes().length) {
 			semanticErrorThrower = new SemanticErrorThrower(call.getLine(), 
 					String.format("Method except %d arguments but gets %d", 
@@ -319,9 +304,10 @@ public class TypeValidator implements Visitor{
 		}
 
 		for (int i = 0; i < call.getArguments().size(); i++) {
-			if (!call.getArguments().get(i).getEntryType().equals(
-					calledMethodType.getParamTypes()[i])) {
-				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Argument type dosen't match the method parameter type");
+				if (!isLegalAssignment(calledMethodType.getParamTypes()[i], 
+					call.getArguments().get(i).getEntryType())) {
+				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), 
+						"Argument type dosen't match the method parameter type");
 				return false;
 			}
 		}
@@ -345,8 +331,7 @@ public class TypeValidator implements Visitor{
 		for (Expression arg : call.getArguments())
 			if (!(Boolean)arg.accept(this))
 				return false;
-		SymbolEntry methodEntry = call.getMethodEntry();
-		MethodType calledMethodType = (MethodType)methodEntry.getType();
+		MethodType calledMethodType = (MethodType)call.getMethodType();
 		if (call.getArguments().size() != calledMethodType.getParamTypes().length) {
 			semanticErrorThrower = new SemanticErrorThrower(call.getLine(), 
 					String.format("Method expects %d arguments but gets %d", 
@@ -354,8 +339,8 @@ public class TypeValidator implements Visitor{
 			return false;
 		}
 		for (int i = 0; i < call.getArguments().size(); i++) {
-			if (!call.getArguments().get(i).getEntryType().equals(
-					calledMethodType.getParamTypes()[i])) {
+			if (!isLegalAssignment(calledMethodType.getParamTypes()[i], 
+					call.getArguments().get(i).getEntryType())) {
 				semanticErrorThrower = new SemanticErrorThrower(call.getLine(), "Argument type dosen't match the method parameter type");
 				return false;
 			}
@@ -568,5 +553,10 @@ public class TypeValidator implements Visitor{
 		semanticErrorThrower = new SemanticErrorThrower(binaryOp.getLine(), String.format("Invalid %s binary op (%s) on %s expression",
 				opType, binaryOp.getOperator().toString(), onWhat));
 		return false;
+	}
+	
+	private Boolean isLegalAssignment(Type varType, Type assignmentType) {
+		return (varType.isNullAssignable() && assignmentType.isNullType()) || 
+				(assignmentType.subTypeOf(varType));
 	}
 }

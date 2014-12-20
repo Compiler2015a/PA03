@@ -13,7 +13,7 @@ public abstract class Call extends Expression {
 
 	private String name;
 	private List<Expression> arguments;
-	private SymbolEntry methodEntry;
+	private IC.Types.Type methodType;
 
 	/**
 	 * Constructs a new method call node. Used by subclasses.
@@ -38,12 +38,13 @@ public abstract class Call extends Expression {
 	public List<Expression> getArguments() {
 		return arguments;
 	}
-	
-	public SymbolEntry getMethodEntry() {
-		return methodEntry;
+
+	public IC.Types.Type getMethodType() {
+		return methodType;
 	}
 
-	public void setMethodEntry(SymbolEntry methodEntry) {
-		this.methodEntry = methodEntry;
+	public void setMethodType(IC.Types.Type methodType) {
+		this.methodType = methodType;
 	}
+	
 }

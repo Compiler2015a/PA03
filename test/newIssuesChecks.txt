@@ -1,0 +1,19 @@
+class A 
+{
+	int x;
+	static void main(string[] args) { }
+	int foo() { return 3; }
+	void testing() {
+		int j = "ss";
+	}
+	void foo2(A a1, A a2, A a3) { }
+}
+class B extends A {
+	B b1, b2;
+	int foo() 
+	{
+		int j = (new A()).x;
+		int s = foo2(b1, b2, null);
+		return "s";
+	}
+}
