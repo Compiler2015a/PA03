@@ -71,10 +71,11 @@ public class Compiler {
 				//Pretty-print the program to System.out
 				PrettyPrinter printer = new PrettyPrinter(args[0]);
 				System.out.println(printer.visit(ICRoot));
+				if(isInArgs(args, "-dump-symtab"))
+					System.out.println();
 			}
 			
 			if(isInArgs(args, "-dump-symtab")) {
-				System.out.println();
 				s.getSymbolTable().printTable();
 				typeTableBuilder.getBuiltTypeTable().printTable();
 			}
