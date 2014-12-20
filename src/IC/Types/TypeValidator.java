@@ -1,5 +1,7 @@
 package IC.Types;
 
+import java.util.List;
+
 import IC.DataTypes;
 import IC.AST.*;
 import IC.SemanticAnalysis.SemanticError;
@@ -55,66 +57,19 @@ public class TypeValidator implements Visitor{
 			if (!(Boolean)statement.accept(this))
 				return false;
 		
-		if (method.getType().getName().equals("void"))
+		MethodType methodType = (MethodType)method.getEntryType();
+		if (methodType.getReturnType().isVoidType())
 			return true;
-		for (Statement statement : method.getStatements()) 
-		{
-			if(statement instanceof Return)
-				return true;
-			if(statement instanceof If)
-			{
-				if(hasReturnStatementInIf(statement))
-					return true;
-			}
-		}
+		
 		if((method instanceof LibraryMethod))
 			return true;
-			
-		semanticErrorThrower =  new SemanticErrorThrower(method.getLine(), String.format("Method %s has no return statement", method.getName()));
-		return false;
-	}
-
-	private boolean hasReturnStatementInIf(Statement statement)
-	{
-		boolean hasReturnInIfScope=false;
-		boolean hasReturnInElseScope=false;
-		if(statement instanceof If)
-		{
-			//only one row in if
-			if(((If)statement).getOperation() instanceof Return)
-				hasReturnInIfScope=true;
-			//if is a StatementsBlock
-			else if (((If)statement).getOperation() instanceof StatementsBlock)
-			{
-				for(Statement st: ((StatementsBlock)((If)statement).getOperation()).getStatements())
-				{
-					if(st instanceof Return)
-						hasReturnInIfScope=true;
-					if(st instanceof If)
-						if (hasReturnStatementInIf(st))
-							return true;
-				}
-			}
-			if(((If)statement).hasElse())
-			{
-				if(((If)statement).getOperation() instanceof Return)
-					hasReturnInElseScope=true;
-				else if (((If)statement).getOperation() instanceof StatementsBlock)
-				{
-					for(Statement st: ((StatementsBlock)((If)statement).getElseOperation()).getStatements())
-					{
-						if(st instanceof Return)
-							hasReturnInElseScope=true;
-						if(st instanceof If)
-							if (hasReturnStatementInIf(st))
-								return true;
-					}
-			
-				}
-			}
-		}
-		return (hasReturnInIfScope && hasReturnInElseScope);
 		
+		if (!testRetrunPaths(method.getStatements())) {
+			semanticErrorThrower =  new SemanticErrorThrower(method.getLine(), String.format("Method %s has no return statement", method.getName()));
+			return false;
+		}
+		
+		return true;
 	}
 	
 	@Override
@@ -583,5 +538,27 @@ public class TypeValidator implements Visitor{
 	private Boolean isLegalAssignment(Type varType, Type assignmentType) {
 		return (varType.isNullAssignable() && assignmentType.isNullType()) || 
 				(assignmentType.subTypeOf(varType));
+	}
+	
+	private Boolean testRetrunPaths(List<Statement> statements) {
+		for (Statement stmnt : statements) 
+			if (testRetrunPaths(stmnt))
+				return true;
+		
+		return false;
+	}
+	
+	private Boolean testRetrunPaths(Statement stmnt) {
+		if (stmnt instanceof Return)
+			return true;
+		if (stmnt instanceof StatementsBlock) 
+			return testRetrunPaths(((StatementsBlock)stmnt).getStatements());
+		if (stmnt instanceof If) {
+			If ifStmnt = (If)stmnt;
+			if (ifStmnt.hasElse())
+				return (testRetrunPaths(ifStmnt.getOperation()) && testRetrunPaths(ifStmnt.getElseOperation()));
+		}
+		return false;
+		
 	}
 }
