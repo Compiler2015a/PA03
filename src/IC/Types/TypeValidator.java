@@ -51,13 +51,17 @@ public class TypeValidator implements Visitor{
 		for (Formal formal : method.getFormals()) 
 			if (!(Boolean)formal.accept(this))
 				return false;
+		for (Statement statement : method.getStatements()) 
+			if (!(Boolean)statement.accept(this))
+				return false;
+		
 		if (method.getType().getName().equals("void"))
 			return true;
 		for (Statement statement : method.getStatements()) 
 		{
-			if(statement instanceof Return && statement.accept(this) != null )
+			if(statement instanceof Return)
 				return true;
-			if(statement instanceof If && statement.accept(this) != null )
+			if(statement instanceof If)
 			{
 				if(hasReturnStatementInIf(statement))
 					return true;
@@ -76,23 +80,38 @@ public class TypeValidator implements Visitor{
 		boolean hasReturnInElseScope=false;
 		if(statement instanceof If)
 		{
-			for(Statement st: ((StatementsBlock)((If)statement).getOperation()).getStatements())
+			//only one row in if
+			if(((If)statement).getOperation() instanceof Return)
+				hasReturnInIfScope=true;
+			//if is a StatementsBlock
+			else if (((If)statement).getOperation() instanceof StatementsBlock)
 			{
-				if(st instanceof Return)
-					hasReturnInIfScope=true;
-				if(st instanceof If)
-					if (hasReturnStatementInIf(st))
-						return true;
-			}
-			if(((If)statement).hasElse())
-				for(Statement st: ((StatementsBlock)((If)statement).getElseOperation()).getStatements())
+				for(Statement st: ((StatementsBlock)((If)statement).getOperation()).getStatements())
 				{
 					if(st instanceof Return)
-						hasReturnInElseScope=true;
+						hasReturnInIfScope=true;
 					if(st instanceof If)
 						if (hasReturnStatementInIf(st))
 							return true;
 				}
+			}
+			if(((If)statement).hasElse())
+			{
+				if(((If)statement).getOperation() instanceof Return)
+					hasReturnInElseScope=true;
+				else if (((If)statement).getOperation() instanceof StatementsBlock)
+				{
+					for(Statement st: ((StatementsBlock)((If)statement).getElseOperation()).getStatements())
+					{
+						if(st instanceof Return)
+							hasReturnInElseScope=true;
+						if(st instanceof If)
+							if (hasReturnStatementInIf(st))
+								return true;
+					}
+			
+				}
+			}
 		}
 		return (hasReturnInIfScope && hasReturnInElseScope);
 		
