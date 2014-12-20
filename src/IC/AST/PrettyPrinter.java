@@ -51,7 +51,7 @@ public class PrettyPrinter implements Visitor {
 		output.append("Declaration of class: " + icClass.getName());
 		if (icClass.hasSuperClass())
 			output.append(", subclass of " + icClass.getSuperClassName());
-		output.append(", Type: " + icClass.getEntryType().toString() +", Symbol table: " + icClass.getSymbolsTable().toString());
+		output.append(", Type: " + icClass.getEntryType().toString() +", Symbol table: " + (icClass.hasSuperClass()?icClass.getSymbolsTable().toString():"Global"));
 		depth += 2;
 		for (Field field : icClass.getFields())
 			output.append(field.accept(this));
