@@ -20,7 +20,7 @@ public class SymbolsTableBuilder implements Visitor {
 	 * 	class B {
 	 * 		void foo() {
 	 * 			A a = new A();
-	 * 			int y = a.x; // we need to save A symbol table as the currentClassSymbolTablePoint
+	 * 			int y = a.x; // we need to save A's symbol table as the currentClassSymbolTablePoint to know where to look for x.
 	 * 		}
 	 * }
 	 */	

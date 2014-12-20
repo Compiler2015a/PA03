@@ -178,6 +178,7 @@ public class TypeTable {
 		MethodType methodType = (MethodType)type;
 		return methodType.getReturnType();
 	}
+	
 	public Type getPrimitiveType(String dataTypeName) {
 		if (dataTypeName == DataTypes.INT.getDescription())
 			return intType;
@@ -204,18 +205,7 @@ public class TypeTable {
 		return null;
 
 	}
-	private ArrayType addAndReturnArraySingleType(Type elemType) {
-		if (uniqueArrayTypes.containsKey(elemType))
-			return uniqueArrayTypes.get(elemType);
-		
-		ArrayType arrt = new ArrayType(elemType);
-		uniqueArrayTypes.put(elemType, arrt);
-		values.put(arrt, idCounter);
-		idCounter++;
-		return arrt;
-	}
 	
-
 	public ArrayType getArrayFromType(Type original, int dimention) {
 		Type currArrType = original;
 		for (int i = 0; i < dimention; i++) 
@@ -227,6 +217,17 @@ public class TypeTable {
 	public Type getTypeFromArray(Type type) {
 		ArrayType arrayType = (ArrayType)type;
 		return arrayType.getElemType();
+	}
+	
+	private ArrayType addAndReturnArraySingleType(Type elemType) {
+		if (uniqueArrayTypes.containsKey(elemType))
+			return uniqueArrayTypes.get(elemType);
+		
+		ArrayType arrt = new ArrayType(elemType);
+		uniqueArrayTypes.put(elemType, arrt);
+		values.put(arrt, idCounter);
+		idCounter++;
+		return arrt;
 	}
 	
 	private MethodType generateMethodType(Method method) {

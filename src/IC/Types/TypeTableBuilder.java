@@ -19,12 +19,17 @@ public class TypeTableBuilder implements Visitor {
 		return this.builtTypeTable;
 	}
 	
+	// Builds the program's Type Table and also checks the following semantic issues:
+	// 1) There is only one Main method with the correct signature (using findAndCheckMainMethod)
+	// 2) Classes only extends classes which were declared before them.
+	//	  (this also prevents any inheritance cycle).
 	public void buildTypeTable(Program program) throws SemanticError {
 		if (!findAndCheckMainMethod(program))
 			semanticErrorThrower.execute();
 		if (!(Boolean)visit(program))
 			semanticErrorThrower.execute();
 	}
+	
 	
 	private Boolean findAndCheckMainMethod(Program program) {
 		int mainMethodCounter = 0;
@@ -37,6 +42,7 @@ public class TypeTableBuilder implements Visitor {
 				}
 			}
 		}
+		// Main method count checking:
 		if (mainMethodCounter == 0) {
 			semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is missing");
 			return false;
@@ -46,6 +52,7 @@ public class TypeTableBuilder implements Visitor {
 			return false;
 		}
 		
+		// Signature checking and type registering of the main method:
 		if (!(lastMainMethod instanceof StaticMethod)) {
 			semanticErrorThrower = new SemanticErrorThrower(lastMainMethod.getLine(), "Main Method must be static");
 			return false;
@@ -80,6 +87,8 @@ public class TypeTableBuilder implements Visitor {
 
 	@Override
 	public Object visit(ICClass icClass) {
+		// Checks if the class extends a class which was not 
+		// declared before (including class extending itself situation).
 		if (!builtTypeTable.addClassType(icClass)) {
 			semanticErrorThrower = new SemanticErrorThrower(icClass.getLine(),
 					"extended class " + icClass.getSuperClassName() + " was not declared");
@@ -263,7 +272,7 @@ public class TypeTableBuilder implements Visitor {
 		for (Formal formal : method.getFormals())
 			formal.accept(this);
 		method.getType().accept(this);
-		
+		// method type registration
 		builtTypeTable.addMethodType(method);
 		for (Statement stmnt : method.getStatements())
 			stmnt.accept(this);
@@ -272,6 +281,7 @@ public class TypeTableBuilder implements Visitor {
 	}
 	
 	private Object visitType(IC.AST.Type type) {
+		// array type registration.
 		if (isArrayType(type))
 			builtTypeTable.addArrayType(type);
 		
