@@ -80,12 +80,18 @@ public class TypeValidator implements Visitor{
 			{
 				if(st instanceof Return)
 					hasReturnInIfScope=true;
+				if(st instanceof If)
+					if (hasReturnStatementInIf(st))
+						return true;
 			}
 			if(((If)statement).hasElse())
 				for(Statement st: ((StatementsBlock)((If)statement).getElseOperation()).getStatements())
 				{
 					if(st instanceof Return)
 						hasReturnInElseScope=true;
+					if(st instanceof If)
+						if (hasReturnStatementInIf(st))
+							return true;
 				}
 		}
 		return (hasReturnInIfScope && hasReturnInElseScope);
