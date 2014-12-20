@@ -10,17 +10,28 @@ import IC.AST.*;
 
 public class SymbolsTableBuilder implements Visitor {
 	
-	private Queue<ASTNode> nodeHandlingQueue;
-	private SymbolTable rootSymbolTable;
+	private Queue<ASTNode> nodeHandlingQueue; // for BFS scanning
+	private SymbolTable rootSymbolTable; /// a pointer to the GLOBAL symbol table
 
-	private SymbolTable currentClassSymbolTablePoint;
-	private IC.Types.Type currentMethodType;
+	private SymbolTable currentClassSymbolTablePoint; // for searching scope of variables which
+	// called from external class location.
+	/* for exaple:
+	 * 	class A { int x; }
+	 * 	class B {
+	 * 		void foo() {
+	 * 			A a = new A();
+	 * 			int y = a.x; // we need to save A symbol table as the currentClassSymbolTablePoint
+	 * 		}
+	 * }
+	 */	
+	private IC.Types.Type currentMethodType; // for the return statement to have the method type
+	// which it returns value to.
 	
 	private TypeTable typeTable;
 	
-	private SemanticErrorThrower semanticErrorThrower;
+	private SemanticErrorThrower semanticErrorThrower; 
 	
-	int blockCounter;
+	int blockCounter; // for giving unique IDs to statements block symbol tables.
 	
 	public SymbolsTableBuilder(TypeTable typeTable, String tableId) {
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
@@ -36,11 +47,25 @@ public class SymbolsTableBuilder implements Visitor {
 		return rootSymbolTable;
 	}
 	
+	// Builds the program symbol table and do the following things:
+	// 1) Checks there are no calls to variables or methods which were not initialized in their scope.
+	// 	  1.1) Calls to local variables will only be permitted if the variable was initialized before the call.
+	//	  1.2) There is a separation between a class virtual scope and static scope in this check but a class has only one symbol table.
+	// 2) Checks there are no calls to classes which were not declared in the program
+	// 3) Checks variables weren't initialized in their scope more than once.
+	// 4) Checks fields weren't initialized in their scope or in one of their super classes more than once.
+	// 5) Checks methods were not declared more than once in their scope or in one of their
+	//	  super classes unless a method overrides a method with the same signature.
+	// 6) Set types to each of the class, fields, formals and local variables nodes.
+	// 7) Connects each node with its local symbol table.
+	// The AST is scanned in BFS down to the methods level and in DFS from there on.
 	public void buildSymbolTables(Program root) throws SemanticError {
 		nodeHandlingQueue.add(root);
 		ASTNode currentNode;
 		this.blockCounter = 0;
-		while (!nodeHandlingQueue.isEmpty()) {
+		while (!nodeHandlingQueue.isEmpty()) { 
+			// BFS queue scan. The queue allows to scan all the classes, then all the fields and then all the methods.
+			// The statements inside a method will be scanned "deeply" (DFS) and will not be added to the queue.
 			currentNode = nodeHandlingQueue.poll();
 			if (!(Boolean)currentNode.accept(this)) 
 				semanticErrorThrower.execute();
