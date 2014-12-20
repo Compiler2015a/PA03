@@ -9,7 +9,7 @@ import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.IDSymbolsKinds;
 import IC.SymbolsTable.SymbolTable;
 
-public class TypeValidator implements Visitor{
+public class TypeValidator implements Visitor {
 
 	private int loopNesting;
 	private TypeTable typeTable;
@@ -19,6 +19,12 @@ public class TypeValidator implements Visitor{
 		this.typeTable = typeTable;
 	}
 	
+	// Scans the program tree recursively and check the following semantic rules:
+	// 1) Type checking
+	// 2) Each method has return statement in all of the computation paths.
+	// 3) No continue and break keywords appear outside a while scope.
+	// 4) This expression is not called from a static method.
+	// In addition, the scan sets types to expressions during the type checking.
 	public void validate(Program program) throws SemanticError {
 		if (!(Boolean)program.accept(this))
 			this.semanticErrorThrower.execute();
@@ -45,30 +51,6 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Field field) {
-		return true;
-	}
-	
-	public Object visitMethod(Method method) {
-		
-		for (Formal formal : method.getFormals()) 
-			if (!(Boolean)formal.accept(this))
-				return false;
-		for (Statement statement : method.getStatements()) 
-			if (!(Boolean)statement.accept(this))
-				return false;
-		
-		MethodType methodType = (MethodType)method.getEntryType();
-		if (methodType.getReturnType().isVoidType())
-			return true;
-		
-		if((method instanceof LibraryMethod))
-			return true;
-		
-		if (!testRetrunPaths(method.getStatements())) {
-			semanticErrorThrower =  new SemanticErrorThrower(method.getLine(), String.format("Method %s has no return statement", method.getName()));
-			return false;
-		}
-		
 		return true;
 	}
 	
@@ -113,7 +95,7 @@ public class TypeValidator implements Visitor{
 			return false;
 		Type typeFrom = assignment.getAssignment().getEntryType();
 		
-	
+		// Checks the types are legal for assignment
 		if (!isLegalAssignment(typeTo, typeFrom)) {
 			semanticErrorThrower =  new SemanticErrorThrower(assignment.getLine(), "Value assigned to local variable type mismatch");
 			return false;
@@ -132,6 +114,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Return returnStatement) {
+		// Checks the return value type corresponds the method return type. 
 		Type typeInFact;
 		if (returnStatement.hasValue()) {
 			if (!(Boolean)returnStatement.getValue().accept(this))
@@ -156,7 +139,7 @@ public class TypeValidator implements Visitor{
 			return false;
 		
 		Type typeCondition = ifStatement.getCondition().getEntryType();
-		
+		// condition expression must have a boolean type
 		if (!typeCondition.isBoolType()) {
 			semanticErrorThrower =  new SemanticErrorThrower(ifStatement.getLine(), "Non boolean condition for if statement");
 			return false;
@@ -175,7 +158,7 @@ public class TypeValidator implements Visitor{
 	public Object visit(While whileStatement) {
 		if (!(Boolean)whileStatement.getCondition().accept(this))
 			return false;
-		
+		// condition expression must have a boolean type
 		Type typeCondition = whileStatement.getCondition().getEntryType();
 		if (!typeCondition.isBoolType()) {
 			semanticErrorThrower =  new SemanticErrorThrower(whileStatement.getLine(), "Non boolean condition for while statement");
@@ -188,13 +171,10 @@ public class TypeValidator implements Visitor{
 		loopNesting--;
 		return true;
 	}
-	
-	private boolean isBreakContinueValid() {
-		return loopNesting > 0;
-	}
 
 	@Override
 	public Object visit(Break breakStatement) {
+		// Checks if the break statement was called from a while scope.
 		if (!isBreakContinueValid()) {
 			semanticErrorThrower =  new SemanticErrorThrower(breakStatement.getLine(), 
 					"Use of 'break' statement outside of loop not allowed");
@@ -205,6 +185,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(Continue continueStatement) {
+		// Checks if the continue statement was called from a while scope.
 		if (!isBreakContinueValid()) {
 			semanticErrorThrower =  new SemanticErrorThrower(continueStatement.getLine(), 
 					"Use of 'continue' statement outside of loop not allowed");
@@ -215,6 +196,7 @@ public class TypeValidator implements Visitor{
 
 	@Override
 	public Object visit(StatementsBlock statementsBlock) {
+		// Type validation on all the statements in a statement block
 		for (Statement statement : statementsBlock.getStatements()) 
 			if (!(Boolean)statement.accept(this))
 				return false;
@@ -229,9 +211,8 @@ public class TypeValidator implements Visitor{
 				return false;
 			Type varType = localVariable.getEntryType();
 			Type initType = localVariable.getInitValue().getEntryType();
-			
-			if ((!(varType.isNullAssignable() && initType.isNullType())) && (!varType.equals(initType)) 
-			&& (!initType.subTypeOf(varType))) {
+			// Checks the types are legal for assignment
+			if (!isLegalAssignment(varType, initType)) {
 				semanticErrorThrower =  new SemanticErrorThrower(localVariable.getLine(), "Value assigned to local variable type mismatch");
 				return false;
 			} 
@@ -244,6 +225,7 @@ public class TypeValidator implements Visitor{
 		if (location.isExternal()) {
 			if (!(Boolean)location.getLocation().accept(this))
 				return false;
+			// Outside location must be an instance of a class.
 			if (!location.getLocation().getEntryType().isClassType()) {
 				semanticErrorThrower =  new SemanticErrorThrower(location.getLine(), "External location must have a class type");
 				return false;
@@ -261,11 +243,13 @@ public class TypeValidator implements Visitor{
 		Type typeIndex = location.getIndex().getEntryType();
 		
 		Type typeArray = location.getArray().getEntryType();
+		// Checks the index expression has an int type.
 		if (!typeIndex.isIntType()) {
 			semanticErrorThrower = new SemanticErrorThrower(location.getLine(), "Array index must be an integer");
 			return false;
 		}
-
+		
+		// Set the type of the array location with array T[] to be T.
 		location.setEntryType(typeTable.getTypeFromArray(typeArray));
 		return true;
 	}
@@ -357,6 +341,7 @@ public class TypeValidator implements Visitor{
 			return false;
 		
 		Type typeSize = newArray.getSize().getEntryType();
+		// Checks the array size expression is of type int.
 		if (typeSize == null || !typeSize.isIntType()) {
 			semanticErrorThrower = new SemanticErrorThrower(newArray.getLine(), "Array size must be an integer");
 			return false;
@@ -377,6 +362,7 @@ public class TypeValidator implements Visitor{
 		if (!(Boolean)length.getArray().accept(this))
 			return false;
 		Type type = length.getArray().getEntryType();
+		// the expression which is evaluated by its length must have an array type. 
 		if (!type.isArrayType()) {
 			semanticErrorThrower = new SemanticErrorThrower(length.getLine(), "Length expression must have an array type");
 			return false;
@@ -535,6 +521,33 @@ public class TypeValidator implements Visitor{
 		return false;
 	}
 	
+	private Object visitMethod(Method method) {
+		
+		// Type checking of all the statements
+		for (Formal formal : method.getFormals()) 
+			if (!(Boolean)formal.accept(this))
+				return false;
+		for (Statement statement : method.getStatements()) 
+			if (!(Boolean)statement.accept(this))
+				return false;
+		
+		// Checking that the method has a return statement in each computation path:
+		MethodType methodType = (MethodType)method.getEntryType();
+		if (methodType.getReturnType().isVoidType()) // if this is a void type method, no return statement is needed.
+			return true;
+		
+		if((method instanceof LibraryMethod)) // if this is a library method, no return statement is needed.
+			return true;
+		
+
+		if (!testRetrunPaths(method.getStatements())) { // No return statement error:
+			semanticErrorThrower =  new SemanticErrorThrower(method.getLine(), String.format("Method %s has no return statement", method.getName()));
+			return false;
+		}
+		
+		return true;
+	}
+	
 	private Boolean isLegalAssignment(Type varType, Type assignmentType) {
 		return (varType.isNullAssignable() && assignmentType.isNullType()) || 
 				(assignmentType.subTypeOf(varType));
@@ -559,6 +572,10 @@ public class TypeValidator implements Visitor{
 				return (testRetrunPaths(ifStmnt.getOperation()) && testRetrunPaths(ifStmnt.getElseOperation()));
 		}
 		return false;
-		
+	}
+	
+	// Helps to check if a continue or a break statement were called from a while scope
+	private boolean isBreakContinueValid() {
+		return loopNesting > 0;
 	}
 }

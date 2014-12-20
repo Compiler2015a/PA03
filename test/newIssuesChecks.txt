@@ -6,7 +6,7 @@ class A
 	void testing() {
 		int j = 3;
 	}
-	void foo2(A a1, A a2, A a3) { }
+	void foo2(A a1, A a2, A a3) { return 1; }
 }
 class B extends A {
 	B b1, b2;
@@ -19,5 +19,6 @@ class B extends A {
 		}
 		else if (false)
 			return 5;
+		return 1;
 	}
 }
