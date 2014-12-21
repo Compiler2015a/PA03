@@ -9,6 +9,9 @@ import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.SymbolsTable.IDSymbolsKinds;
 import IC.SymbolsTable.SymbolTable;
 
+/**
+ * a validator that checks all type rules hold
+ */
 public class TypeValidator implements Visitor {
 
 	private int loopNesting;

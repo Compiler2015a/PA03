@@ -550,6 +550,10 @@ public class SymbolsTableBuilder implements Visitor {
 		return true;
 	}
 	
+	/**
+	 * @param method method to evaluate
+	 * @return the symbol kind of this method
+	 */
 	private IDSymbolsKinds getMethodKind(Method method) {
 		if (method instanceof VirtualMethod)
 			return IDSymbolsKinds.VIRTUAL_METHOD;
