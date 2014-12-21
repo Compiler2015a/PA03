@@ -8,6 +8,9 @@ import IC.SemanticAnalysis.SemanticErrorThrower;
 import IC.Types.*;
 import IC.AST.*;
 
+/**
+ * initialized with a program's type table and builds the programs symbol table tree
+ */
 public class SymbolsTableBuilder implements Visitor {
 	
 	private Queue<ASTNode> nodeHandlingQueue; // for BFS scanning
@@ -33,6 +36,11 @@ public class SymbolsTableBuilder implements Visitor {
 	
 	int blockCounter; // for giving unique IDs to statements block symbol tables.
 	
+	/**
+	 * main constructor for SymbolsTableBuilder
+	 * @param typeTable the program's type table
+	 * @param tableId the name of the root of the symbols table tree to be built
+	 */
 	public SymbolsTableBuilder(TypeTable typeTable, String tableId) {
 		this.nodeHandlingQueue = new LinkedList<ASTNode>();
 		this.rootSymbolTable = new SymbolTable(tableId, SymbolTableTypes.GLOBAL);
@@ -43,11 +51,15 @@ public class SymbolsTableBuilder implements Visitor {
 		this.semanticErrorThrower = null;
 	}
 
+	/**
+	 * 
+	 * @return returns currently held symbol table
+	 */
 	public SymbolTable getSymbolTable() {
 		return rootSymbolTable;
 	}
 	
-	// Builds the program symbol table and do the following things:
+	/** Builds the program symbol table and do the following things:
 	// 1) Checks there are no calls to variables or methods which were not initialized in their scope.
 	// 	  1.1) Calls to local variables will only be permitted if the variable was initialized before the call.
 	//	  1.2) There is a separation between a class virtual scope and static scope in this check but a class has only one symbol table.
@@ -59,6 +71,10 @@ public class SymbolsTableBuilder implements Visitor {
 	// 6) Set types to each of the class, fields, formals and local variables nodes.
 	// 7) Connects each node with its local symbol table.
 	// The AST is scanned in BFS down to the methods level and in DFS from there on.
+	 *
+	 * @param root the AST root of the program to be built
+	 * @throws SemanticError
+	 */
 	public void buildSymbolTables(Program root) throws SemanticError {
 		nodeHandlingQueue.add(root);
 		ASTNode currentNode;
@@ -478,6 +494,11 @@ public class SymbolsTableBuilder implements Visitor {
 		return true;
 	}
 	
+	/**
+	 * a visit function for a general method
+	 * @param method method to visit
+	 * @return true iff the visit passed semantic checks
+	 */
 	private Object visitMethod(Method method) {
 		SymbolTable currentMethodSymbolTable = method.getSymbolsTable().findChildSymbolTable(
 				method.getName());

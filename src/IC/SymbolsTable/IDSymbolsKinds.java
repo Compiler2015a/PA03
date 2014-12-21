@@ -1,5 +1,8 @@
 package IC.SymbolsTable;
 
+/**
+ * an enum representing the available symbol kind of ID symbols.
+ */
 public enum IDSymbolsKinds {
 	 //Class, Method, Variable, Field;
 	

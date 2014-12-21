@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Data structure representing symbol table tree node
+ *
+ */
 public class SymbolTable {
 	  /** map from String to Symbol **/	  
 	  
