@@ -81,7 +81,8 @@ class A {
 
 class B {
 	int bint;
-	static int test1(int arg1, string srg2) { }
+	static int test1(int arg1, string srg2) { return 0; }
+	boolean test1(){return false;}
 	boolean yes(int a, boolean b) {
 		return true;
 	}

@@ -15,7 +15,7 @@ public class SymbolsTableBuilder implements Visitor {
 
 	private SymbolTable currentClassSymbolTablePoint; // for searching scope of variables which
 	// called from external class location.
-	/* for exaple:
+	/* for example:
 	 * 	class A { int x; }
 	 * 	class B {
 	 * 		void foo() {
