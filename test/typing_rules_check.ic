@@ -74,7 +74,7 @@ class A {
 	
 	}
 	
-	boolean no(int a, boolean b) {
+	static boolean no(int a, boolean b) {
 		return false;
 	}
 }

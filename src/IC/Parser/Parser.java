@@ -610,6 +610,7 @@ public class Parser extends java_cup.runtime.lr_parser {
 
 	 */
 	public boolean printTokens;
+	public boolean errorFlag=false;
 	
 	private Lexer lexer;
 	private int arrayDimentionCounter = 0;
@@ -625,6 +626,8 @@ public class Parser extends java_cup.runtime.lr_parser {
         Token token = (Token)s;
         sb.append("expected ");
         
+		errorFlag = true;
+		
         if (s.right > 0) {
             boolean isFirst = true;
             expected_token_ids();

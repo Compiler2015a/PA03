@@ -12,7 +12,8 @@ parser code  {:
 	 * This is useful for debugging.
 	 */
 	public boolean printTokens;
-	
+	public boolean errorFlag=false;
+
 	private LibLexer lexer;
 	private int arrayDimentionCounter = 0;
 	
@@ -27,6 +28,8 @@ parser code  {:
         Token token = (Token)s;
         sb.append("expected ");
         
+		errorFlag = true;
+		
         if (s.right > 0) {
             boolean isFirst = true;
             expected_token_ids();
