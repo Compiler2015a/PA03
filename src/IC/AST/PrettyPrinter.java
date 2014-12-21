@@ -362,6 +362,7 @@ public class PrettyPrinter implements Visitor {
 		indent(output, length);
 		output.append("Reference to array length");
 		++depth;
+		output.append(", Type: " + length.getEntryType().toString() + ", Symbol table: " + length.getSymbolsTable().toString());
 		output.append(length.getArray().accept(this));
 		--depth;
 		return output.toString();
