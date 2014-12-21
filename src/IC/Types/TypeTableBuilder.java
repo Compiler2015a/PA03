@@ -1,5 +1,11 @@
 package IC.Types;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
+
 import IC.AST.*;
 import IC.SemanticAnalysis.SemanticError;
 import IC.SemanticAnalysis.SemanticErrorThrower;
@@ -11,13 +17,14 @@ public class TypeTableBuilder implements Visitor {
 	
 	private TypeTable builtTypeTable;
 	private SemanticErrorThrower semanticErrorThrower;
-	
+	private String programFilePath;
 	/**
 	 * main constructor
 	 * @param tableId name of the type table to be built
 	 */
-	public TypeTableBuilder(String tableId) {
-		this.builtTypeTable = new TypeTable(tableId);
+	public TypeTableBuilder(File file) {
+		this.programFilePath = file.getPath();
+		this.builtTypeTable = new TypeTable(file.getName());
 		builtTypeTable.addPrimitiveTypes();
 	}
 	
@@ -58,11 +65,22 @@ public class TypeTableBuilder implements Visitor {
 		}
 		// Main method count checking:
 		if (mainMethodCounter == 0) {
-			semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is missing");
-			return false;
+			try {
+				LineNumberReader lnr = new LineNumberReader(new FileReader(new File(this.programFilePath)));
+				lnr.skip(Long.MAX_VALUE);
+				semanticErrorThrower = new SemanticErrorThrower(lnr.getLineNumber() + 1, "Main Method is missing");
+				lnr.close();
+				return false;
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				return false;
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
 		}
 		if (mainMethodCounter > 1) {
-			semanticErrorThrower = new SemanticErrorThrower(1, "Main Method is declared more than once");
+			semanticErrorThrower = new SemanticErrorThrower(lastMainMethod.getLine(), "Main Method is declared more than once");
 			return false;
 		}
 		
@@ -84,11 +102,6 @@ public class TypeTableBuilder implements Visitor {
 		}
 		
 		return true;
-		
-		// TODO:
-		/*
-		 * 1) Replace line 1 in the last line (according to the forum)
-		 * */
 	}
 	
 	@Override

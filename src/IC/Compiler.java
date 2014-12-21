@@ -38,7 +38,7 @@ public class Compiler {
 				System.out.println("Parsed " + libFile.getName() +" successfully!");
 
 			}
-
+			  
 			//parse IC file
 			File icFile = new File(args[0]);
 			FileReader icFileReader = new FileReader(icFile);
@@ -62,7 +62,7 @@ public class Compiler {
 			System.out.println("Parsed " + icFile.getName() +" successfully!");
 			System.out.println();
 
-			TypeTableBuilder typeTableBuilder = new TypeTableBuilder(icFile.getName());
+			TypeTableBuilder typeTableBuilder = new TypeTableBuilder(icFile);
 			typeTableBuilder.buildTypeTable(ICRoot);
 			SymbolsTableBuilder s = new SymbolsTableBuilder(typeTableBuilder.getBuiltTypeTable(), icFile.getName());
 			s.buildSymbolTables(ICRoot);
