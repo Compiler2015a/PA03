@@ -352,7 +352,7 @@ public class SymbolsTableBuilder implements Visitor {
 					"the class " + call.getClassName() + " dosen't exist");
 			return false;
 		}
-		SymbolEntry methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable);
+		SymbolEntry methodEntry = getMethodSymbolEntryFromExternalCall(call.getName(), IDSymbolsKinds.STATIC_METHOD, clsSymbolTable);
 		if(methodEntry == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
 					"the method " + call.getName() + " dosen't exist");
@@ -375,10 +375,10 @@ public class SymbolsTableBuilder implements Visitor {
 			call.getLocation().setSymbolsTable(call.getSymbolsTable());
 			if (!(Boolean)call.getLocation().accept(this))
 				return false;
-			methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint);
+			methodEntry = getMethodSymbolEntryFromExternalCall(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, this.currentClassSymbolTablePoint);
 		}
 		else 
-			methodEntry = getMethodSymbolEntry(call.getName(), IDSymbolsKinds.VIRTUAL_METHOD, call.getSymbolsTable());
+			methodEntry = getMethodSymbolEntryFromInternalCall(call.getName(), call.getSymbolsTable());
 
 		if(methodEntry == null) {
 			this.semanticErrorThrower = new SemanticErrorThrower(call.getLine(),
@@ -561,10 +561,18 @@ public class SymbolsTableBuilder implements Visitor {
 		return IDSymbolsKinds.STATIC_METHOD;
 	}
 	
+	/**
+	 * Looks for a symbol entry for a local variable. 
+	 * The entry can be of kind Local Variable, Method Parameter or a Field.
+	 * @param name
+	 * @param bottomSymbolTable
+	 * @return
+	 */
 	private SymbolEntry getVariableSymbolEntry(String name, SymbolTable bottomSymbolTable) {
 		if ((bottomSymbolTable.getTableType() == SymbolTableTypes.METHOD) || 
 				(bottomSymbolTable.getTableType() == SymbolTableTypes.STATEMENT_BLOCK)) {
-			while (bottomSymbolTable.getId().contains("block#")) {
+			// Climbing the symbol table tree up to the symbol table of the method from which contains the variable.
+			while (bottomSymbolTable.getTableType().equals(SymbolTableTypes.STATEMENT_BLOCK)) {
 				if (bottomSymbolTable.hasEntry(name))
 					return bottomSymbolTable.getEntry(name);
 				bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
@@ -576,12 +584,16 @@ public class SymbolsTableBuilder implements Visitor {
 			
 			String containigMethodName = bottomSymbolTable.getId();
 			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
+			
+			// If a variable was called from a static method, it can't be a filed.
+			// There so, it must be initialized in one of the method parameters or inside the method.
+			// In that case, the check is done and the entry was not found.
 			if (bottomSymbolTable.getEntry(containigMethodName).getKind() == 
 					IDSymbolsKinds.STATIC_METHOD)
 				return null;
 		}
 		
-		// Checking class tables:
+		// Checking class tables for a suitable field:
 		while (bottomSymbolTable.getTableType() != SymbolTableTypes.GLOBAL) {
 			SymbolTable clsTable = bottomSymbolTable;
 			if (clsTable.hasEntry(name))
@@ -593,12 +605,57 @@ public class SymbolsTableBuilder implements Visitor {
 		return null;
 	}
 	
-	private SymbolEntry getMethodSymbolEntry(
+	/**
+	 * Looks for a method symbol entry from a static call or from a virtual call with external scope.
+	 * @param name
+	 * @param methodKind
+	 * @param bottomClassSymbolTable: The methods assume it has a CLASS symbol table type.
+	 * @return
+	 */
+	private SymbolEntry getMethodSymbolEntryFromExternalCall(
 			String name, IDSymbolsKinds methodKind, SymbolTable bottomClassSymbolTable) {
 		while (bottomClassSymbolTable != null) {
 			if (bottomClassSymbolTable.hasEntry(name))
-				if (bottomClassSymbolTable.getEntry(name).getKind() == methodKind)
+				if (bottomClassSymbolTable.getEntry(name).getKind() == methodKind) // An external method mast be consistent with the call type.
 					return bottomClassSymbolTable.getEntry(name);
+			bottomClassSymbolTable = bottomClassSymbolTable.getParentSymbolTable();
+		}
+		return null;
+	}
+	
+	/**
+	 * Looks for a method symbol entry from a virtual call without external scope.
+	 * If the call was executed from a virtual method then a method entry with the same name and with any method kind (virtual or static) is a legal entry.
+	 * If the call was executed from a static method then only a method entry of kind static method with the same name is a legal entry.
+	 * @param name
+	 * @param bottomSymbolTable: The methods assume it has a METHOD or a STATEMENT_BLCOK symbol table type.
+	 * @return
+	 */
+	private SymbolEntry getMethodSymbolEntryFromInternalCall(
+			String name, SymbolTable bottomSymbolTable) {
+		
+		// Climbing the symbol table tree up to the symbol table of the method from which the call was executed.
+		while (bottomSymbolTable.getTableType().equals(SymbolTableTypes.STATEMENT_BLOCK)) 
+			bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
+		
+		// Identifying kind of the method from which the call was executed (static or virtual).
+		IDSymbolsKinds scopeMethodKind = bottomSymbolTable.getParentSymbolTable().
+				getEntry(bottomSymbolTable.getId()).getKind();
+		SymbolTable bottomClassSymbolTable = bottomSymbolTable = bottomSymbolTable.getParentSymbolTable();
+		while (bottomClassSymbolTable.getTableType() != SymbolTableTypes.GLOBAL) {
+			if (bottomClassSymbolTable.hasEntry(name)) {
+				if (bottomClassSymbolTable.getEntry(name).getKind().isMethodKind()) { //found a method with same name
+					if (scopeMethodKind == IDSymbolsKinds.VIRTUAL_METHOD) // from a virtual method the call can be to both static and virtual methods.
+						return bottomClassSymbolTable.getEntry(name);
+					if (scopeMethodKind == IDSymbolsKinds.STATIC_METHOD) { // from a static method the call must be to a static method.
+						if (bottomClassSymbolTable.getEntry(name).getKind() == IDSymbolsKinds.STATIC_METHOD)
+							return bottomClassSymbolTable.getEntry(name);
+						else
+							return null; // calling to a virtual method in a virtual call without external scope from a static call is illegal.
+					}
+				}
+					
+			}
 			bottomClassSymbolTable = bottomClassSymbolTable.getParentSymbolTable();
 		}
 		return null;

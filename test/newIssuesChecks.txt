@@ -1,19 +1,28 @@
 class A 
 {
 	int x;
-	static void main(string[] args) { }
+	static void main(string[] args) {  }
 	int foo() { return 3; }
 	void testing() {
 		int j = 3;
+		foo();
+		foo2(null, null, null);
+		A.main(null);
 	}
-	void foo2(A a1, A a2, A a3) { }
+	A foo2(A a1, A a2, A a3) 
+	{
+		if(true) return new B();
+		else return null; 
+	}
 }
 class B extends A {
 	B b1, b2;
 	int foo() 
 	{
 		int j = (new A()).x;
-
+		{
+			{ main(new string[2]); }
+		}
 		foo2(b1, b2, null);
 		if (true) {
 			return 1;
